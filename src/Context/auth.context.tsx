@@ -40,7 +40,7 @@ export const AuthContext = createContext<IAuthContext>({
 
 export function AuthProvider({ children }: any) {
     const [statusErroAuth, setStatusErroAuth] = useState(false);
-    const storedToken = localStorage.getItem("token");
+    const storedToken = localStorage.getItem("token-repo");
     const storedUser = localStorage.getItem("user-repo");
 
     const [isAuthenticated, setIsAuthenticated] = useState(!!storedToken);
@@ -57,12 +57,11 @@ export function AuthProvider({ children }: any) {
             );
 
             if (status === 200 || status === 201) {
-                api.defaults.headers.common = {
-                    Authorization: `Bearer ${data.auth_token}`,
-                };
-                
+                api.defaults.headers.common.Authorization = `Bearer ${data.accessToken}`
+
                 localStorage.setItem("user-repo", JSON.stringify(data));
-                localStorage.setItem("token-repo", data.token);
+                localStorage.setItem("token-repo", data.accessToken);
+                localStorage.setItem("refreshToken-repo", data?.refreshToken)
 
                 setUser(data);
                 setIsAuthenticated(true);
@@ -73,34 +72,38 @@ export function AuthProvider({ children }: any) {
             throw error;
         }
     }
-    
+
     async function logout() {
         try {
 
-            const {data} = await api.post("auth/logout")
+            const { data } = await api.post("auth/logout")
 
             localStorage.removeItem("user-repo");
             localStorage.removeItem("token-repo");
+            localStorage.removeItem("refreshToken-repo")
             setUser(null);
             setIsAuthenticated(false);
+
             return data
 
         } catch (error) {
             console.log("Erro ao terminar sessão")
-            return ;
+            return;
         }
-        
+
     }
 
     async function readSession() {
         const token = localStorage.getItem("token-repo");
         const userData = localStorage.getItem("user-repo");
+        const refreshToken = localStorage.getItem("refreshToken-repo");
 
-        if (token && userData) {
-            api.defaults.headers.common = { Authorization: `Bearer ${token}` };
+        if (token && userData && refreshToken) {
+            api.defaults.headers.common.Authorization = `Bearer ${token}`;
 
             setUser(JSON.parse(userData));
             setIsAuthenticated(true);
+            
         } else {
             setIsAuthenticated(false);
         }
@@ -110,7 +113,7 @@ export function AuthProvider({ children }: any) {
 
     useEffect(() => {
         readSession();
-    }, [isAuthenticated]);
+    }, []);
 
 
     return (

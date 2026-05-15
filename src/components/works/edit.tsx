@@ -17,9 +17,10 @@ import { useEspecialities } from "../hooks/useEspecialities"
 type props = {
     isOpen: boolean,
     onClose: () => void,
+    itemSelected: any,
 }
 
-export default function CreateWorks({ onClose, isOpen }: props) {
+export default function UpdateWork({ onClose, isOpen, itemSelected }: props) {
 
     const [loading, setLoading] = useState(false)
     const [formData, setFormData] = useState({
@@ -30,6 +31,19 @@ export default function CreateWorks({ onClose, isOpen }: props) {
         especialidadesIds: ""
     })
 
+    useEffect(() => {
+        if (itemSelected) {
+            setFormData({
+                titulo: itemSelected?.titulo ?? "",
+                resumo: itemSelected?.resumo ?? "",
+                fileUrl: itemSelected?.fileUrl ?? "",
+                departamentoId: itemSelected?.departamento?.id ? String(itemSelected.departamento.id) : "",
+                especialidadesIds: itemSelected?.especialidades?.length > 0 ? String(itemSelected.especialidades[0].id) : "",
+            })
+        }
+    }, [itemSelected])
+
+
     const [formDataFiles, setFormDataFiles] = useState({
         file: null,
     }) as any
@@ -39,18 +53,6 @@ export default function CreateWorks({ onClose, isOpen }: props) {
     const especialities = useEspecialities()
 
     const especialitiesFiltered = especialities?.filter((item: any) => item?.departamento?.id === Number(formData?.departamentoId))
-
-    const clearInputs = () => {
-        setFormData({
-            ...formData,
-            titulo: "",
-            resumo: "",
-            fileUrl: "",
-            departamentoId: "",
-            especialidadesIds: ""
-
-        })
-    }
 
 
     const upload = async (file: any) => {
@@ -74,39 +76,39 @@ export default function CreateWorks({ onClose, isOpen }: props) {
         }
     }
 
-    const createWork = async (e: any) => {
+    const editWork = async (e: any) => {
         e.preventDefault()
 
-        if (!formData?.departamentoId || !formData?.especialidadesIds) return toast.warning("Preencha todos os campos");
-        if (!formDataFiles?.file) return toast.warning("Carregue um ficheiro PDF!");
+        if (!itemSelected?.id) return toast.error("Trabalho não encontrado!");
 
         setLoading(true)
 
         try {
-            let urlFile
+            let urlFile = formData.fileUrl;
 
-            urlFile = await upload(formDataFiles?.file)
+            // só faz upload se houver novo ficheiro
+            if (formDataFiles?.file) {
+                urlFile = await upload(formDataFiles.file);
+            }
 
             let arrayEspecialidades = []
             arrayEspecialidades.push(Number(formData?.especialidadesIds))
 
-            if (!urlFile) return; // não há ficheiro
-
             const body = {
-                titulo: formData?.titulo,
-                resumo: formData?.resumo,
-                fileUrl: urlFile ?? "",
+                titulo: formData.titulo,
+                resumo: formData.resumo,
+                fileUrl: urlFile,
                 departamentoId: Number(formData.departamentoId),
                 especialidadesIds: arrayEspecialidades
             }
 
-            await api.post(`trabalhos`, body)
+
+            await api.put(`trabalhos/${itemSelected.id}`, body)
 
             queryClient.invalidateQueries({ queryKey: [`worksList`] });
 
             setLoading(false)
-            clearInputs()
-            toast.success(`Trabalho criado com sucesso!`, {
+            toast.success(`Trabalho salvo com sucesso!`, {
                 icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <circle cx="12" cy="12" r="12" fill="#1AD598" />
                     <path fill-rule="evenodd" clip-rule="evenodd" d="M16.8321 7C16.5318 7.01221 16.2495 7.146 16.05 7.37109C14.2501 9.31396 12.6081 11.2202 10.8801 13.1221L8.84906 11.3662C8.61801 11.1641 8.31168 11.0688 8.00647 11.1055C7.70126 11.1416 7.4259 11.3062 7.24905 11.5576C6.85696 12.0923 6.93347 12.8369 7.42606 13.2812L10.269 15.7314C10.7145 16.1216 11.3919 16.0791 11.785 15.6357C13.83 13.4272 15.662 11.2583 17.66 9.1001C18.1082 8.61133 18.1147 7.86328 17.675 7.36719C17.4612 7.12744 17.1532 6.99316 16.8321 7Z" fill="white" />
@@ -130,7 +132,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
             setLoading(false)
             if (isAxiosError(error)) {
 
-                const message = error?.response?.data?.message ?? "Erro ao criar trabalho"
+                const message = error?.response?.data?.message ?? "Erro ao salvar trabalho"
 
                 toast.error(`${message}`, {
                     icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -145,12 +147,6 @@ export default function CreateWorks({ onClose, isOpen }: props) {
             }
         }
     }
-
-    useEffect(() => {
-        if (!isOpen) {
-            clearInputs()
-        }
-    }, [isOpen])
 
     const handlFileChange = async (e: any) => {
         if (e.target.files && e.target.files.length > 0) {
@@ -174,7 +170,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
 
                 <SheetContent style={{ minWidth: '35%' }} className="pr-16 pl-16 pt-10 w-full flex-col overflow-y-auto scrollbar-none">
                     <div className="flex justify-between items-center w-full pb-14">
-                        <SheetHeader className="text-[#143163] font-semibold text-lg p-0">Criar novo Trabalho</SheetHeader>
+                        <SheetHeader className="text-[#143163] font-semibold text-lg p-0">Editar trabalho</SheetHeader>
                         <SheetClose className=" cursor-pointer bg-[#DBDEE3] hover:bg-[#C5C9CE] rounded duration-300"><svg width="25" height="25" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <rect width="25" height="25" rx="8" />
                             <path d="M29.7067 28.2943C30.0973 28.685 30.0973 29.3183 29.7067 29.709C29.512 29.9037 29.256 30.0023 29 30.0023C28.744 30.0023 28.488 29.905 28.2933 29.709L21 22.4156L13.7067 29.709C13.512 29.9037 13.256 30.0023 13 30.0023C12.744 30.0023 12.488 29.905 12.2933 29.709C11.9027 29.3183 11.9027 28.685 12.2933 28.2943L19.5867 21.001L12.2933 13.7077C11.9027 13.317 11.9027 12.6837 12.2933 12.293C12.684 11.9023 13.3173 11.9023 13.708 12.293L21.0013 19.5864L28.2946 12.293C28.6853 11.9023 29.3187 11.9023 29.7093 12.293C30.1 12.6837 30.1 13.317 29.7093 13.7077L22.416 21.001L29.7067 28.2943Z" fill="#143163" stroke="#143163" />
@@ -182,17 +178,17 @@ export default function CreateWorks({ onClose, isOpen }: props) {
                         </SheetClose>
                     </div>
 
-                    <form onSubmit={createWork} className="">
+                    <form className="" onSubmit={editWork}>
 
 
                         <div className="flex flex-col space-y-2 mt-6">
                             <label className="text-[#143163] text-[14px] font-semibold">Título do trabalho<strong className="text-[#ED5656]">*</strong></label>
-                            <input type="text" required value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                            <input type="text" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                                 className={`h-9 p-2 ring-1 rounded-[6px] ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm`} />
                         </div>
                         <div className="flex flex-col space-y-2 mt-6 w-full">
                             <label className="text-[#143163] text-[14px] font-semibold">Departamento <strong className="text-[#ED5656]">*</strong></label>
-                            <Select value={formData.departamentoId} required onValueChange={(value) => setFormData({ ...formData, departamentoId: value })}>
+                            <Select value={formData.departamentoId} onValueChange={(value) => setFormData({ ...formData, departamentoId: value })}>
                                 <SelectTrigger className="w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm">
                                     <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
@@ -204,7 +200,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
                         </div>
                         <div className="flex flex-col space-y-2 mt-6 w-full">
                             <label className="text-[#143163] text-[14px] font-semibold">Especialidade <strong className="text-[#ED5656]">*</strong></label>
-                            <Select value={formData.especialidadesIds} required onValueChange={(value) => setFormData({ ...formData, especialidadesIds: value })}>
+                            <Select value={formData.especialidadesIds} onValueChange={(value) => setFormData({ ...formData, especialidadesIds: value })}>
                                 <SelectTrigger className="w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm">
                                     <SelectValue placeholder="Selecione" />
                                 </SelectTrigger>
@@ -216,7 +212,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
                         </div>
                         <div className="flex flex-col space-y-2 mt-6">
                             <label className="text-[#143163] text-[14px] font-semibold">Resumo do trabalho</label>
-                            <textarea required value={formData.resumo} onChange={(e) => setFormData({ ...formData, resumo: e.target.value })}
+                            <textarea value={formData.resumo} onChange={(e) => setFormData({ ...formData, resumo: e.target.value })}
                                 className={`h-20 p-2 ring-1 rounded-[6px] ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm`} />
                         </div>
                         <div className="flex flex-col space-y-2 mt-6">
@@ -267,7 +263,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
                                 {loading ?
                                     <div className="flex justify-center items-center">
                                         <Spinner color="#0B1437" width="5" height="5" />
-                                    </div> : "Adicoinar"
+                                    </div> : "Salvar"
                                 }
                             </button>
                         </div>

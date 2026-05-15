@@ -26,7 +26,7 @@ export default function Header() {
 
     return (
         <>
-            <header className=' bg-white mb-10 w-full rounded-lg p-4 shadow-md text-center font-bold text-[#0B1437]'>
+            <header className=' bg-white mb-10 w-full rounded-lg p-4 text-center font-bold text-[#0B1437]'>
                 <div className="flex items-center w-full justify-end space-x-2">
                     <p>
                         Perfil

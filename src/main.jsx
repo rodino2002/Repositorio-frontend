@@ -3,6 +3,8 @@ import './index.css'
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { Routers } from '../src/components/routes/index.routes';
+import "../src/components/service/refresh";
+
 import {
   QueryClient,
   QueryClientProvider,

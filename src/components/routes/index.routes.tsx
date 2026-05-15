@@ -13,6 +13,8 @@ import Trabalhos from "../pages/works"
 import Especialidades from "../pages/especialities"
 import Departamentos from "../pages/departaments"
 import Avaliadores from "../pages/avaliadores"
+import SemanticTCCSearchLanding from "../pages/busca-semantica"
+import ISPBLandingPage from "../pages/landingPageRepo"
 
 export const Routers = () => {
      const {isAuthenticated} = useContext(AuthContext);
@@ -27,6 +29,9 @@ export const Routers = () => {
                     <Route path='/login' element={isAuthenticated ? <Navigate to="/" />:<Login />} />
                     <Route path="criar-conta" element={isAuthenticated ? <Navigate to="/" /> : <CreateAccount />} />
                     <Route path="*" element={<PageNotFound />} />
+                    <Route path="/busca-semantica-tcc" element={<SemanticTCCSearchLanding />} />
+                     <Route path="/repositorio" element={<ISPBLandingPage />} />
+
 
                     {/* Rotas privadas */}
                     <Route element={<PrivateRoute />}>

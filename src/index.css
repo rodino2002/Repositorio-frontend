@@ -162,3 +162,8 @@
   stroke-dashoffset: -125px;
  }
 }
+
+[data-slot="dialog-overlay"] {
+  background: rgba(0, 0, 0, 0.45) !important;
+  backdrop-filter: blur(6px);
+}
