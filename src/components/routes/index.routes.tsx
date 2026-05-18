@@ -17,7 +17,7 @@ import SemanticTCCSearchLanding from "../pages/busca-semantica"
 import ISPBLandingPage from "../pages/landingPageRepo"
 
 export const Routers = () => {
-     const {isAuthenticated} = useContext(AuthContext);
+    const { isAuthenticated } = useContext(AuthContext);
 
     return (
         <>
@@ -26,22 +26,22 @@ export const Routers = () => {
 
                     {/* rotas públicas */}
 
-                    <Route path='/login' element={isAuthenticated ? <Navigate to="/" />:<Login />} />
+                    <Route path='/login' element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
                     <Route path="criar-conta" element={isAuthenticated ? <Navigate to="/" /> : <CreateAccount />} />
                     <Route path="*" element={<PageNotFound />} />
                     <Route path="/busca-semantica-tcc" element={<SemanticTCCSearchLanding />} />
-                     <Route path="/repositorio" element={<ISPBLandingPage />} />
+                    <Route path="/repositorio" element={<ISPBLandingPage />} />
 
 
                     {/* Rotas privadas */}
                     <Route element={<PrivateRoute />}>
                         <Route path='/' element={<Dashboard />} />
-                         <Route path='/estudantes' element={<Estudantes />} />
-                          <Route path='/docentes' element={<Docentes />} />
-                           <Route path='/trabalhos' element={<Trabalhos />} />
-                            <Route path='/especialidades' element={<Especialidades />} />
-                             <Route path='/departamentos' element={<Departamentos />} />
-                             <Route path='/avaliadores' element={<Avaliadores />} />
+                        <Route path='/estudantes' element={<Estudantes />} />
+                        <Route path='/docentes' element={<Docentes />} />
+                        <Route path='/trabalhos' element={<Trabalhos />} />
+                        <Route path='/especialidades' element={<Especialidades />} />
+                        <Route path='/departamentos' element={<Departamentos />} />
+                        <Route path='/avaliadores' element={<Avaliadores />} />
                     </Route>
 
                 </Routes>

@@ -12,7 +12,14 @@ import {
 import { useDepartaments } from "../hooks/useDepartaments";
 import { useEspecialities } from "../hooks/useEspecialities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import Carrossel from "../busca-semantica/carrosssel";
+import { useTipoTrabalhos } from "../hooks/useTipoTrabalho";
 
+// 1. Captura o ano atual dinamicamente (ex: 2026)
+const anoAtual = new Date().getFullYear();
+
+// 2. Cria um array com os últimos 5 anos: [2026, 2025, 2024, 2023, 2022]
+const listaAnos = Array.from({ length: 5 }, (_, index) => String(anoAtual - index));
 
 export default function SemanticTCCSearchLanding() {
 
@@ -20,16 +27,20 @@ export default function SemanticTCCSearchLanding() {
     const [selectedFile, setSelectedFile] = useState("")
     const [departamentoId, setDepartamentoId] = useState("")
     const [especialidadeId, setEspecialidadeId] = useState("")
+    const [tipoTrabalhoId, setTipoTrabalhoId] = useState("")
     const [searchTerm, setSearchTerm] = useState("")
-
+    const [ano, setAno] = useState<string>(String(anoAtual));
+    
     const [filters, setFilters] = useState({
         departamentoId: "",
         especialidadeId: "",
         searchTerm: "",
+        tipoTrabalhoId: "",
     })
 
     const departaments = useDepartaments()
     const especialities = useEspecialities()
+    const tipoTrabalhos = useTipoTrabalhos()
 
     const especialitiesFiltered = especialities?.filter((item: any) => item?.departamento?.id === Number(departamentoId))
 
@@ -39,7 +50,7 @@ export default function SemanticTCCSearchLanding() {
         const items = isSemantic ? data.resultados : data.dados
 
         return {
-            total: isSemantic ? data.totalEncontrados : data.total,
+            total: isSemantic ? data.totalEncontrados : data.paginacao?.totalItems,
             items: items.map((item: any) => ({
                 id: item.id,
                 titulo: item.titulo,
@@ -50,10 +61,12 @@ export default function SemanticTCCSearchLanding() {
                 autor: item.autor,
                 departamento: item.departamento,
                 especialidades: item.especialidades,
+                tipoTrabalho: item.tipoTrabalho,
 
                 // unifica ranking da busca semântica
                 score: item.score ?? item.similarity ?? null,
             })),
+
         }
     }
     async function getWorks() {
@@ -69,6 +82,7 @@ export default function SemanticTCCSearchLanding() {
 
             const url = `trabalhos?status=APROVADO&departamentoId=${filters.departamentoId === "todos" ? "" : filters.departamentoId || ""
                 }&especialidadeId=${filters.especialidadeId === "todas" ? "" : filters.especialidadeId || ""
+                }&tipoTrabalhoId=${filters.tipoTrabalhoId === "todos" ? "" : filters.tipoTrabalhoId || ""
                 }`
 
             const { data } = await api.get(url)
@@ -87,11 +101,14 @@ export default function SemanticTCCSearchLanding() {
         queryFn: getWorks,
     })
 
+    console.log(ano)
+
     const handleFilter = () => {
         setFilters({
             departamentoId,
             especialidadeId,
             searchTerm,
+            tipoTrabalhoId,
         })
     }
 
@@ -100,94 +117,14 @@ export default function SemanticTCCSearchLanding() {
         setPreviewOpen(true)
     }
 
-    const carouselImages = [
-        {
-            id: 1,
-            image:
-                "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1600&auto=format&fit=crop",
-            title: "Campus Universitário Moderno",
-            subtitle: "Inspirado no ambiente académico do ISPB",
-        },
-        {
-            id: 2,
-            image:
-                "https://images.unsplash.com/photo-1562774053-701939374585?q=80&w=1600&auto=format&fit=crop",
-            title: "Investigação Científica e Tecnologia",
-            subtitle: "Pesquisa semântica com inteligência artificial",
-        },
-        {
-            id: 3,
-            image:
-                "https://images.unsplash.com/photo-1523240795612-9a054b0db644?q=80&w=1600&auto=format&fit=crop",
-            title: "Biblioteca e Produção Científica",
-            subtitle: "Explore trabalhos académicos publicados",
-        },
-    ]
 
 
     return (
         <>
             {/* HERO CAROUSEL */}
-            <section className="relative h-[90vh] min-h-175 overflow-hidden">
-                <div className="absolute inset-0 z-0">
-                    <div className="flex h-full w-full overflow-x-auto snap-x snap-mandatory scrollbar-none scroll-smooth">
-                        {carouselImages.map((slide) => (
-                            <div
-                                key={slide.id}
-                                className="relative min-w-full h-full snap-start"
-                            >
-                                <img
-                                    src={slide.image}
-                                    alt={slide.title}
-                                    className="w-full h-full object-cover"
-                                />
-
-                                <div className="absolute inset-0 bg-black/60" />
-
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="max-w-7xl mx-auto px-6 lg:px-10 w-full">
-                                        <div className="max-w-3xl text-white">
-                                            <div className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-4 py-2 rounded-full text-sm font-semibold mb-6">
-                                                Plataforma Inteligente de Pesquisa Académica
-                                            </div>
-
-                                            <h1 className="text-5xl md:text-6xl lg:text-7xl font-black leading-tight tracking-tight">
-                                                {slide.title}
-                                            </h1>
-
-                                            <p className="mt-6 text-zinc-200 text-lg md:text-xl leading-relaxed max-w-2xl">
-                                                {slide.subtitle}
-                                            </p>
-
-                                            <div className="mt-10 flex flex-col sm:flex-row gap-4">
-                                                <button className="bg-[#FC9500] hover:opacity-90 transition rounded-2xl px-8 py-4 text-white font-semibold shadow-2xl shadow-[#FC9500]/30">
-                                                    Explorar Trabalhos
-                                                </button>
-
-                                                <button className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition rounded-2xl px-8 py-4 font-semibold text-white">
-                                                    Pesquisa Semântica
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex gap-3">
-                    {[1, 2, 3].map((item) => (
-                        <div
-                            key={item}
-                            className="w-3 h-3 rounded-full bg-white/50 backdrop-blur-md"
-                        />
-                    ))}
-                </div>
-            </section>
-
+            <Carrossel />
             <div className="relative -mt-20 z-20">
-                <div className="min-h-screen bg-gradient-to-b from-[#F8FAFF] to-white text-[#0B1437]">
+                <div className="min-h-screen bg-linear-to-b from-[#F8FAFF] to-white text-[#0B1437]">
                     {/* HERO */}
                     <section className="relative overflow-hidden">
                         <div className="absolute top-0 left-0 w-72 h-72 bg-[#FFC505]/20 blur-3xl rounded-full" />
@@ -305,83 +242,115 @@ export default function SemanticTCCSearchLanding() {
 
                     {/* FILTROS */}
                     <section className="max-w-7xl mx-auto px-6 lg:px-10 mt-4">
-                        <div className="bg-white border border-zinc-200 rounded-[32px] p-6 shadow-xl">
-                            <div className="flex flex-col  gap-4 items-center">
-                                <div className="flex w-full relative">
-                                    <input
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                handleFilter()
-                                            }
+                        <div className="bg-white border border-zinc-200 rounded-lg p-6 ">
+                            <div className="flex space-x-px items-center">
+                                <div className="flex flex-col space-y-2">
+
+                                <label className="text-sm text-zinc-500 mr-4">Ano de publicação:</label>
+                                {listaAnos.map((ano) => (
+                                    <button
+                                        key={ano}
+                                        onClick={() => {
+                                            setSearchTerm(ano);
+                                            handleFilter();
                                         }}
-                                        type="text"
-                                        value={searchTerm}
-                                        onChange={(e) => setSearchTerm(e.target.value)}
-                                        placeholder="Pesquise por tema, resumo, contexto ou significado..."
-                                        className="w-full h-14 rounded border border-zinc-200 bg-[#F8FAFF] px-5 pr-14 outline-none focus:ring-2 focus:ring-[#FFC505]"
-                                    />
-
-                                    <div className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-400">
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="22"
-                                            height="22"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            strokeWidth="2"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        >
-                                            <circle cx="11" cy="11" r="8" />
-                                            <path d="m21 21-4.3-4.3" />
-                                        </svg>
-                                    </div>
+                                        className="px-4 py-2 text-sm font-medium text-[#141B59] bg-[#F8FAFF] border border-zinc-200 hover:bg-[#E9ECEF] focus:outline-none focus:ring-2 focus:ring-[#FFC505]"
+                                    >
+                                       Desde {ano}
+                                    </button>
+                                ))}
                                 </div>
+                                <div className="flex flex-col gap-4 items-center">
 
-                                <div className="flex w-full gap-4">
+                                    <div className="flex w-full relative">
+                                        <input
+                                            onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                    handleFilter()
+                                                }
+                                            }}
+                                            type="text"
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                            placeholder="Pesquise por tema, resumo, contexto ou significado..."
+                                            className="w-full h-14 rounded border border-zinc-200 bg-[#F8FAFF] px-5 pr-14 outline-none focus:ring-2 focus:ring-[#FFC505]"
+                                        />
 
-                                    <div className="flex flex-col space-y-2 w-full">
-                                        <Select value={departamentoId} onValueChange={(value) => setDepartamentoId(value ? String(value) : "")}>
-                                            <SelectTrigger className="h-14 w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] 
-                                        focus:outline-none text-[#143163] text-sm">
-                                                <SelectValue placeholder="Selecione" />
-                                            </SelectTrigger>
-                                            <SelectContent
-                                                className="w-full rounded border border-zinc-200 bg-[#F8FAFF] px-2 outline-none focus:ring-2 focus:ring-[#FFC505]"
+                                        <div className="absolute right-5 top-1/2 -translate-y-1/2 text-zinc-400">
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="22"
+                                                height="22"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
                                             >
-                                                <SelectItem value="todos">Todos os departamentos</SelectItem>
-                                                {departaments?.length > 0 && departaments?.map((item: any) => <SelectItem key={item?.id} value={String(item?.id)}>{item?.nome}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
+                                                <circle cx="11" cy="11" r="8" />
+                                                <path d="m21 21-4.3-4.3" />
+                                            </svg>
+                                        </div>
                                     </div>
 
-                                    <div className="flex flex-col w-full">
-                                        <Select value={especialidadeId} onValueChange={(value) => setEspecialidadeId(value ? String(value) : "")}>
-                                            <SelectTrigger className="h-14 w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] 
+                                    <div className="flex w-full gap-4">
+
+                                        <div className="flex flex-col space-y-2 w-full">
+                                            <Select value={departamentoId} onValueChange={(value) => setDepartamentoId(value ? String(value) : "")}>
+                                                <SelectTrigger className="h-14 w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] 
                                         focus:outline-none text-[#143163] text-sm">
-                                                <SelectValue placeholder="Selecione" />
-                                            </SelectTrigger>
-                                            <SelectContent
-                                                className="w-full rounded border border-zinc-200 bg-[#F8FAFF] px-2 outline-none focus:ring-2 focus:ring-[#FFC505]"
-                                            >
-                                                <SelectItem value="todas">Todas as especialidades</SelectItem>
-                                                {especialitiesFiltered?.length > 0 && especialitiesFiltered?.map((item: any) => <SelectItem key={item?.id} value={String(item?.id)}>{item?.nome}</SelectItem>)}
-                                            </SelectContent>
-                                        </Select>
+                                                    <SelectValue placeholder="Filtrar por departamento" />
+                                                </SelectTrigger>
+                                                <SelectContent
+                                                    className="w-full rounded border border-zinc-200 bg-[#F8FAFF] px-2 outline-none focus:ring-2 focus:ring-[#FFC505]"
+                                                >
+                                                    <SelectItem value="todos">Todos</SelectItem>
+                                                    {departaments?.length > 0 && departaments?.map((item: any) => <SelectItem key={item?.id} value={String(item?.id)}>{item?.nome}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div className="flex flex-col w-full">
+                                            <Select value={especialidadeId} onValueChange={(value) => setEspecialidadeId(value ? String(value) : "")}>
+                                                <SelectTrigger className="h-14 w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] 
+                                        focus:outline-none text-[#143163] text-sm">
+                                                    <SelectValue placeholder="Filtrar por especialidade" />
+                                                </SelectTrigger>
+                                                <SelectContent
+                                                    className="w-full rounded border border-zinc-200 bg-[#F8FAFF] px-2 outline-none focus:ring-2 focus:ring-[#FFC505]"
+                                                >
+                                                    <SelectItem value="todas">Todas</SelectItem>
+                                                    {especialitiesFiltered?.length > 0 && especialitiesFiltered?.map((item: any) => <SelectItem key={item?.id} value={String(item?.id)}>{item?.nome}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="flex flex-col space-y-2 w-full">
+                                            <Select value={tipoTrabalhoId} onValueChange={(value) => setTipoTrabalhoId(value ? String(value) : "")}>
+                                                <SelectTrigger className="h-14 w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] 
+                                        focus:outline-none text-[#143163] text-sm">
+                                                    <SelectValue placeholder="Filtrar por tipo de trabalho" />
+                                                </SelectTrigger>
+                                                <SelectContent
+                                                    className="w-full rounded border border-zinc-200 bg-[#F8FAFF] px-2 outline-none focus:ring-2 focus:ring-[#FFC505]"
+                                                >
+                                                    <SelectItem value="todos">Todos</SelectItem>
+                                                    {tipoTrabalhos?.length > 0 && tipoTrabalhos?.map((item: any) => <SelectItem key={item?.id} value={String(item?.id)}>{item?.nome}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
                                     </div>
+
                                 </div>
-
-                                <button
-                                    type="button"
-                                    onClick={handleFilter}
-
-                                    className="h-14 px-8 w-full rounded-2xl bg-[#FC9500] hover:opacity-90 transition text-white
-                                 font-semibold shadow-lg shadow-[#FC9500]/20">
-                                    Pesquisar
-                                </button>
-
                             </div>
+                            <button
+                                type="button"
+                                onClick={handleFilter}
+
+                                className="mt-10 h-14 px-8 w-full rounded-2xl bg-[#FC9500] hover:opacity-90 transition text-white
+                                 font-semibold shadow-lg shadow-[#FC9500]/20">
+                                Pesquisar
+                            </button>
                         </div>
                     </section>
 
@@ -464,7 +433,7 @@ export default function SemanticTCCSearchLanding() {
                                                 </div>}
                                             </div>
                                         </div>
-
+                                        <p className="p-2 w-full flex justify-center text-sm ">{item.tipoTrabalho?.nome || "Tipo de Trabalho"}</p>
                                         {/* CONTENT */}
                                         <div className="p-6 space-y-5">
                                             {/* Autor + Ano */}
