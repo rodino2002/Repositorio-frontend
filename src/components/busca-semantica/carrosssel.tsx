@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import img1 from "@/assets/carrossel/img1.jpg"
-import img2 from "@/assets/carrossel/img2.jpg"
-import img3 from "@/assets/carrossel/img3.jpg"
+import img1 from "@/assets/carrossel/img1.jpeg"
+import img2 from "@/assets/carrossel/img2.jpeg"
+import img3 from "@/assets/carrossel/img3.jpeg"
+import img4 from "@/assets/carrossel/img4.jpeg"
+import img5 from "@/assets/carrossel/img5.jpeg"
+import img6 from "@/assets/carrossel/img6.jpeg"
+import img7 from "@/assets/carrossel/img7.jpeg"
+import img8 from "@/assets/carrossel/img8.jpeg"
+import img9 from "@/assets/carrossel/img9.jpeg"
 
 const carouselImages = [
         {
@@ -25,7 +31,48 @@ const carouselImages = [
             title: "Biblioteca e Produção Científica",
             subtitle: "Explore trabalhos académicos publicados",
         },
-        
+        {
+            id: 4,
+            image:
+                img4,
+            title: "Laboratórios e Inovação",
+            subtitle: "Ambientes de pesquisa equipada com tecnologia de ponta",
+        },
+        {
+            id: 5,
+            image:
+                img5,
+            title: "Estudos e Colaboração",
+            subtitle: "Áreas de estudo inspiradoras para trabalhos em equipa",
+        },
+        {
+            id: 6,
+            image:
+                img6,
+            title: "Soluções Tecnológicas Avançadas",
+            subtitle: "Plataformas integradas para análise semântica",
+        },
+        {
+            id: 7,
+            image:
+                img7,
+            title: "Espaços Académicos Inspiradores",
+            subtitle: "Design pensado para promover criatividade e foco",
+        },
+        {
+            id: 8,
+            image:
+                img8,
+            title: "Eventos Científicos e Workshops",
+            subtitle: "Aprendizagem contínua com especialistas e investigadores",
+        },
+        {
+            id: 9,
+            image:
+                img9,
+            title: "Futuro da Pesquisa Académica",
+            subtitle: "Descubra insights através da pesquisa semântica",
+        },
     ]
     
 export default function Carrossel() {
