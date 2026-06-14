@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useContext, useMemo, useState } from "react"
 import { api } from "../config/api"
 import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "../utils/spinner";
@@ -14,6 +14,7 @@ import ModalValidateWork from "../works/modalValidate";
 import { capitalize } from "../helpers/capitalize";
 import DetailsWork from "../works/details";
 import UpdateWork from "../works/edit";
+import { AuthContext } from "@/Context/auth.context";
 
 export default function Trabalhos() {
     const [searchInput, setSearchInput] = useState("")
@@ -35,15 +36,16 @@ export default function Trabalhos() {
     const [itemSelected, setItemSelected] = useState() as any
     const [isFiltered, setIsFiltered] = useState(false)
     const [editModalIsOpen, setEditModalIsOpen] = useState(false)
-
     const [createModalIsOpen, setCreateModalIsOpen] = useState(false)
     const [_modalValidateIsOpen, setModalValidateIsOpen] = useState(false)
+    const { user } = useContext(AuthContext)
+
 
     async function getWorks() {
         try {
 
 
-            const url = `trabalhos`;
+            const url = user?.usuario?.role === "ESTUDANTE" ? `trabalhos/me`: `trabalhos`;
 
             const { data } = await api.get(url);
             return data;
@@ -182,7 +184,7 @@ export default function Trabalhos() {
                             text-[#465A9D] pl-10" />
                     </div>
                     <div className="flex justify-between space-x-4">
-                        <button
+                        {user?.usuario?.role === "ESTUDANTE" && <button
                             onClick={() => setCreateModalIsOpen(true)}
                             type="button" className="font-semibold cursor-pointer w-35 h-12 rounded-lg text-[#0B1437] hover:text-white bg-[#E6EEFC] hover:bg-[#FC9500] duration-300 
                     flex items-center justify-center space-x-1">
@@ -190,7 +192,7 @@ export default function Trabalhos() {
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M19.75 12C19.75 12.414 19.414 12.75 19 12.75H12.75V19C12.75 19.414 12.414 19.75 12 19.75C11.586 19.75 11.25 19.414 11.25 19V12.75H5C4.586 12.75 4.25 12.414 4.25 12C4.25 11.586 4.586 11.25 5 11.25H11.25V5C11.25 4.586 11.586 4.25 12 4.25C12.414 4.25 12.75 4.586 12.75 5V11.25H19C19.414 11.25 19.75 11.586 19.75 12Z" fill="currentColor" stroke="currentColor" stroke-width="0.8" />
                             </svg>
-                        </button>
+                        </button>}
                         <button
                             onClick={() => setFilterModalIsOpen(true)}
                             type="button" className="font-semibold cursor-pointer w-35 h-12 rounded-lg text-[#0B1437] hover:text-white bg-[#E6EEFC] hover:bg-[#FC9500] duration-300 
@@ -270,6 +272,9 @@ export default function Trabalhos() {
                                                 {item?.titulo ?? "N/A"}
                                             </td>
                                             <td className="text-start py-2 px-2 pt-4 border-b border-b-[#EDEFF6]">
+                                                {item?.autor?.nome ?? "N/A"}
+                                            </td>
+                                            <td className="text-start py-2 px-2 pt-4 border-b border-b-[#EDEFF6]">
                                                 <div
                                                     className={`
                                                         w-27.5
@@ -290,9 +295,7 @@ export default function Trabalhos() {
                                                 >
                                                     {capitalize(item?.status?.toLowerCase())}
                                                 </div></td>
-                                            <td className="text-start py-2 px-2 pt-4 border-b- border-b-[#EDEFF6]">
-                                                {item?.status?.toLowerCase()}
-                                            </td>
+                                            
                                             <td className="text-start py-2 px-2 pt-4 border-b border-b-[#EDEFF6]">
                                                 {item?.especialidades[0]?.nome ?? "N/A"}
                                             </td>
@@ -316,7 +319,7 @@ export default function Trabalhos() {
                                                         </div>
                                                     </button>
                                                     <button onClick={() => {
-                                                            setEditModalIsOpen(true),
+                                                        setEditModalIsOpen(true),
                                                             setItemSelected(item)
                                                     }}>
                                                         <div className="hover:bg-[#009F5E] hover:text-white bg-[#E6FFF4]
@@ -326,8 +329,8 @@ export default function Trabalhos() {
                                                             </svg>
                                                         </div>
                                                     </button>
-                                                    
-                                                    <div className="p-2 mt-1 cursor-pointer">
+
+                                                    {user?.usuario?.role ==="ADMIN" && <div className="p-2 mt-1 cursor-pointer">
 
                                                         <Popover>
                                                             <Tooltip>
@@ -436,7 +439,7 @@ export default function Trabalhos() {
                                                             </PopoverContent>
                                                         </Popover>
 
-                                                    </div>
+                                                    </div>}
                                                 </div>
                                             </td>
 
@@ -445,7 +448,7 @@ export default function Trabalhos() {
                                     </>
                                 ) :
                                     <tr>
-                                        <td colSpan={6} className="text-center py-6">Nenhum movimento encontrado no momento.</td>
+                                        <td colSpan={6} className="text-center py-6">Nenhum trabalho encontrado no momento.</td>
                                     </tr>
                             }
 

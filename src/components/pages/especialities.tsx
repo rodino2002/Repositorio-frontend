@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useContext, useMemo, useState } from "react"
 import { api } from "../config/api"
 import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "../utils/spinner";
@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
 import ModalEliminarEspeciality from "../especialities/delete";
 import EditEspeciality from "../especialities/edit";
 import DetailsEspeciality from "../especialities/details";
+import { AuthContext } from "@/Context/auth.context";
 
 
 export default function Especialidades() {
@@ -33,6 +34,8 @@ export default function Especialidades() {
     const [editEspecialityModal, setEditEspecialityModal] = useState(false)
     const [detailsEspecialityModal, setDetailsEspecialityModal] = useState(false)
     const [modalEliminar, setModalEliminar] = useState(false)
+    const { user } = useContext(AuthContext)
+
 
     async function getDepartaments() {
         try {
@@ -174,7 +177,7 @@ export default function Especialidades() {
                             text-[#465A9D] pl-10" />
                     </div>
                     <div className="flex justify-between space-x-4">
-                        <button
+                        {user?.usuario?.role === "ADMIN" && <button
                             onClick={() => setCreateModalIsOpen(true)}
                             type="button" className="font-semibold cursor-pointer w-[140px] h-[50px] rounded-lg text-[#0B1437] hover:text-white bg-[#E6EEFC] hover:bg-[#FC9500] duration-300 
                     flex items-center justify-center space-x-1">
@@ -182,7 +185,7 @@ export default function Especialidades() {
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M19.75 12C19.75 12.414 19.414 12.75 19 12.75H12.75V19C12.75 19.414 12.414 19.75 12 19.75C11.586 19.75 11.25 19.414 11.25 19V12.75H5C4.586 12.75 4.25 12.414 4.25 12C4.25 11.586 4.586 11.25 5 11.25H11.25V5C11.25 4.586 11.586 4.25 12 4.25C12.414 4.25 12.75 4.586 12.75 5V11.25H19C19.414 11.25 19.75 11.586 19.75 12Z" fill="currentColor" stroke="currentColor" stroke-width="0.8" />
                             </svg>
-                        </button>
+                        </button>}
                         <button
                             onClick={() => setFilterModalIsOpen(true)}
                             type="button" className="font-semibold cursor-pointer w-[140px] h-[50px] rounded-lg text-[#0B1437] hover:text-white bg-[#E6EEFC] hover:bg-[#FC9500] duration-300 
@@ -291,7 +294,7 @@ export default function Especialidades() {
                                                         </TooltipTrigger>
                                                         <TooltipContent>Detalhes</TooltipContent>
                                                     </Tooltip>
-                                                    <Tooltip >
+                                                   {user?.usuario?.role ==="ADMIN" && <Tooltip >
                                                         <TooltipTrigger>
 
                                                             <button onClick={() => {
@@ -307,10 +310,10 @@ export default function Especialidades() {
                                                             </button>
                                                         </TooltipTrigger>
                                                         <TooltipContent>Editar</TooltipContent>
-                                                    </Tooltip>
+                                                    </Tooltip>}
 
-                                                    <Dialog >
-                                                        <Tooltip >
+                                                    {user?.usuario?.role ==="ADMIN" && <Dialog>
+                                                        <Tooltip>
                                                             <TooltipTrigger>
 
 
@@ -343,7 +346,7 @@ export default function Especialidades() {
                                                                 />
 
                                                             </DialogContent>}
-                                                    </Dialog>
+                                                    </Dialog>}
                                                 </div>
                                             </td>
 

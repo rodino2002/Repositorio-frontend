@@ -12,7 +12,7 @@ import {
 
 import { NavLink } from "react-router-dom"
 
-import { useState } from "react"
+import { useContext, useState } from "react"
 
 // Define types for menu items
 type SubMenuItem = {
@@ -26,6 +26,7 @@ type MenuItem = {
   url: string;
   icon: React.FC;
   SubItem?: SubMenuItem[];
+  roles: ("estudante" | "admin" | "avaliador" | "professor")[];
 };
 
 // Menu items.
@@ -34,47 +35,58 @@ const MenuItems: MenuItem[] = [
     title: "Dashboard",
     url: "/",
     icon: EstatisticasIcon,
+    roles: ["estudante", "admin"],
   },
   {
     title: "Departamentos",
     url: "/departamentos",
     icon: EstatisticasIcon,
+    roles: ["estudante", "admin"],
   },
   {
     title: "Especialidades",
     url: "/especialidades",
     icon: EstatisticasIcon,
+    roles: ["estudante", "admin"],
   },
   {
     title: "Trabalhos",
     url: "/trabalhos",
     icon: EstatisticasIcon,
+    roles: ["estudante", "admin"],
   },
   {
     title: "Estudantes",
     url: "/estudantes",
     icon: EstatisticasIcon,
+    roles: ["admin"],
   },
   {
     title: "Docentes",
     url: "/docentes",
     icon: EstatisticasIcon,
+    roles: ["admin"],
   },
-   {
+  {
     title: "Avaliadores",
     url: "/avaliadores",
     icon: EstatisticasIcon,
+    roles: ["admin"],
   },
-
 ];
 
 import { ChevronRight } from "lucide-react"; // ícones bacanas
 import EstatisticasIcon from "../../assets/sidebarIcons/iconsTeste";
+import { AuthContext } from "@/Context/auth.context";
 
 export function AppSidebar() {
   const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
   const anoAtual: number = new Date().getFullYear();
+  const { user } = useContext(AuthContext)
 
+  const userRole = String(user?.usuario?.role)?.toLocaleLowerCase() as "estudante" | "admin" | "avaliador" | "professor"
+
+  const filteredMenuItems = MenuItems.filter((item) => item.roles.includes(userRole));
 
   const toggleMenu = (title: string) => {
     setOpenMenus((prev) => ({
@@ -88,7 +100,7 @@ export function AppSidebar() {
       <SidebarHeader className="bg-[#ffffff] border-b-2 border-b-[#F4F7FE]">
         <nav className="flex items-center  justify-center h-[150px]">
           <NavLink to="/">
-           <div className="flex justify-center w-full">
+            <div className="flex justify-center w-full">
               <img src="/logo.png" className="w-40 h-40 animate-pulse" />
             </div>
           </NavLink>
@@ -102,7 +114,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
 
-              {MenuItems?.map((item) => (
+              {filteredMenuItems?.map((item) => (
                 <SidebarMenuItem key={item?.title}>
                   {item.SubItem ? (
                     // Item com submenus

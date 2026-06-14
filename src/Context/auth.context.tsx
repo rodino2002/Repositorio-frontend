@@ -2,15 +2,19 @@ import { api } from "@/components/config/api";
 import { createContext, useEffect, useState } from "react";
 
 type IUser = {
-    id: string;
-    phone_number: string;
-    email: string;
-    auth_token: string;
-    api_token: string;
-    created_at: string;
-    available_sms: number;
-    role: string;
-    postpaid: boolean | null
+    usuario: {
+        id: string;
+        phone_number: string;
+        email: string;
+        auth_token: string;
+        api_token: string;
+        created_at: string;
+        available_sms: number;
+        role: "ESTUDANTE" | "ADMIN" | "PROFESSOR" | "AVALIADOR";
+        postpaid: boolean | null
+    },
+    accessToken: string,
+    refreshToken: string
 }
 
 type LoginParams = {
@@ -103,7 +107,7 @@ export function AuthProvider({ children }: any) {
 
             setUser(JSON.parse(userData));
             setIsAuthenticated(true);
-            
+
         } else {
             setIsAuthenticated(false);
         }
