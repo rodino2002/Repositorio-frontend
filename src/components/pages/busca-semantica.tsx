@@ -232,14 +232,7 @@ export default function SemanticTCCSearchLanding() {
                                         Pesquise por contexto, assunto ou significado — não apenas palavras-chave.
                                     </p>
 
-                                    <div className="mt-10 flex flex-col sm:flex-row gap-4">
-                                        <button className="bg-[#141B59] hover:bg-[#1e2775] transition-all duration-300 rounded-2xl px-8 py-4 text-white font-bold shadow-lg shadow-[#141B59]/20">
-                                            Explorar Trabalhos
-                                        </button>
-                                        <button className="border border-zinc-300 hover:bg-white transition-all duration-300 rounded-2xl px-8 py-4 font-bold text-[#0B1437]">
-                                            Ver Demonstração
-                                        </button>
-                                    </div>
+                                   
                                 </div>
 
                                 {/* CARD VISUAL (Refinado) */}
@@ -474,7 +467,7 @@ export default function SemanticTCCSearchLanding() {
                                                         {item.departamento?.nome || "Departamento"}
                                                     </p>
 
-                                                    <h3 className="font-bold text-[26px] leading-tight text-white line-clamp-2">
+                                                    <h3 title={item?.titulo} className="font-bold text-[26px] leading-tight text-white line-clamp-2">
                                                         {item.titulo}
                                                     </h3>
                                                 </div>
