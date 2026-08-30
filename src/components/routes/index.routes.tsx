@@ -7,12 +7,10 @@ import CreateAccount from "../pages/crateAccount"
 import PrivateRoute from "./private.routes"
 import { AuthContext } from "@/Context/auth.context"
 import { useContext } from "react"
-import Estudantes from "../pages/students"
-import Docentes from "../pages/techears"
+import Estudantes from "../pages/gestao_de_contas"
 import Trabalhos from "../pages/works"
 import Especialidades from "../pages/especialities"
 import Departamentos from "../pages/departaments"
-import Avaliadores from "../pages/avaliadores"
 import SemanticTCCSearchLanding from "../pages/busca-semantica"
 import ISPBLandingPage from "../pages/landingPageRepo"
 import BuscaSemanticaActual from "../pages/busca-semantica-actual"
@@ -29,21 +27,19 @@ export const Routers = () => {
 
                     <Route path='/login' element={isAuthenticated ? <Navigate to="/" /> : <Login />} />
                     <Route path="criar-conta" element={isAuthenticated ? <Navigate to="/" /> : <CreateAccount />} />
+                    <Route path="criar-conta-professor" element={isAuthenticated ? <Navigate to="/" /> : <CreateAccount />} />
                     <Route path="*" element={<PageNotFound />} />
                     {/* <Route path="/busca-semantica-tcc" element={<SemanticTCCSearchLanding />} /> */}
                     <Route path="/busca-semantica-tcc" element={<BuscaSemanticaActual />} />
                     <Route path="/repositorio" element={<ISPBLandingPage />} />
 
-
                     {/* Rotas privadas */}
                     <Route element={<PrivateRoute />}>
                         <Route path='/' element={<Dashboard />} />
-                        <Route path='/estudantes' element={<Estudantes />} />
-                        <Route path='/docentes' element={<Docentes />} />
+                        <Route path='/gestao-de-contas' element={<Estudantes />} />
                         <Route path='/trabalhos' element={<Trabalhos />} />
                         <Route path='/especialidades' element={<Especialidades />} />
                         <Route path='/departamentos' element={<Departamentos />} />
-                        <Route path='/avaliadores' element={<Avaliadores />} />
                     </Route>
 
                 </Routes>

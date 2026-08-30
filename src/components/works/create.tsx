@@ -13,6 +13,7 @@ import { api } from "../config/api"
 import { useDepartaments } from "../hooks/useDepartaments"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { useEspecialities } from "../hooks/useEspecialities"
+import { useTipoTrabalhos } from "../hooks/useTipoTrabalho"
 
 type props = {
     isOpen: boolean,
@@ -27,7 +28,8 @@ export default function CreateWorks({ onClose, isOpen }: props) {
         resumo: "",
         fileUrl: "",
         departamentoId: "",
-        especialidadesIds: ""
+        especialidadesIds: "",
+        tipo: ""
     })
 
     const [formDataFiles, setFormDataFiles] = useState({
@@ -37,6 +39,8 @@ export default function CreateWorks({ onClose, isOpen }: props) {
     const queryClient = useQueryClient()
     const departaments = useDepartaments()
     const especialities = useEspecialities()
+    const tipoDeTrabalho = useTipoTrabalhos()
+
 
     const especialitiesFiltered = especialities?.filter((item: any) => item?.departamento?.id === Number(formData?.departamentoId))
 
@@ -47,7 +51,8 @@ export default function CreateWorks({ onClose, isOpen }: props) {
             resumo: "",
             fileUrl: "",
             departamentoId: "",
-            especialidadesIds: ""
+            especialidadesIds: "",
+            tipo: ""
 
         })
     }
@@ -77,7 +82,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
     const createWork = async (e: any) => {
         e.preventDefault()
 
-        if (!formData?.departamentoId || !formData?.especialidadesIds) return toast.warning("Preencha todos os campos");
+        if (!formData?.departamentoId || !formData?.especialidadesIds || !formData.tipo) return toast.warning("Preencha todos os campos");
         if (!formDataFiles?.file) return toast.warning("Carregue um ficheiro PDF!");
 
         setLoading(true)
@@ -97,7 +102,8 @@ export default function CreateWorks({ onClose, isOpen }: props) {
                 resumo: formData?.resumo,
                 fileUrl: urlFile ?? "",
                 departamentoId: Number(formData.departamentoId),
-                especialidadesIds: arrayEspecialidades
+                especialidadesIds: arrayEspecialidades,
+                tipoTrabalhoId: formData.tipo
             }
 
             await api.post(`trabalhos`, body)
@@ -211,6 +217,20 @@ export default function CreateWorks({ onClose, isOpen }: props) {
                                 <SelectContent
                                     className="ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none ">
                                     {especialitiesFiltered?.length > 0 && especialitiesFiltered?.map((item: any) => <SelectItem key={item?.id} value={String(item?.id)}>{item?.nome}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="flex flex-col space-y-2 mt-6 w-full">
+                            <label className="text-[#143163] text-[14px] font-semibold">Tipo de trabalho <strong className="text-[#ED5656]">*</strong></label>
+                            <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
+                                <SelectTrigger className="w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm">
+                                    <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent
+                                    className="ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none ">
+                                    {tipoDeTrabalho?.map((item: any) =>
+                                     <SelectItem key={item?.id} 
+                                    value={String(item?.id)}>{item?.nome}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

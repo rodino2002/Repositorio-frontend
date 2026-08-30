@@ -101,66 +101,286 @@ export default function EditEspeciality({ onClose, isOpen, itemSelected }: props
         }
     }
 
-    return (
-        <>
-            <Sheet onOpenChange={onClose} open={isOpen}>
 
-                <SheetContent style={{ minWidth: '35%' }} className="pr-16 pl-16 pt-10 w-full flex-col overflow-y-auto scrollbar-none">
-                    <div className="flex justify-between items-center w-full pb-14">
-                        <SheetHeader className="text-[#143163] font-semibold text-lg p-0">Editar novo Departamento</SheetHeader>
-                        <SheetClose className=" cursor-pointer bg-[#DBDEE3] hover:bg-[#C5C9CE] rounded duration-300"><svg width="25" height="25" viewBox="0 0 42 42" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <rect width="25" height="25" rx="8" />
-                            <path d="M29.7067 28.2943C30.0973 28.685 30.0973 29.3183 29.7067 29.709C29.512 29.9037 29.256 30.0023 29 30.0023C28.744 30.0023 28.488 29.905 28.2933 29.709L21 22.4156L13.7067 29.709C13.512 29.9037 13.256 30.0023 13 30.0023C12.744 30.0023 12.488 29.905 12.2933 29.709C11.9027 29.3183 11.9027 28.685 12.2933 28.2943L19.5867 21.001L12.2933 13.7077C11.9027 13.317 11.9027 12.6837 12.2933 12.293C12.684 11.9023 13.3173 11.9023 13.708 12.293L21.0013 19.5864L28.2946 12.293C28.6853 11.9023 29.3187 11.9023 29.7093 12.293C30.1 12.6837 30.1 13.317 29.7093 13.7077L22.416 21.001L29.7067 28.2943Z" fill="#143163" stroke="#143163" />
-                        </svg>
-                        </SheetClose>
-                    </div>
+return (
+    <Sheet open={isOpen} onOpenChange={onClose}>
+        <SheetContent
+            className="
+                w-full
+                sm:max-w-xl
+                lg:max-w-2xl
+                px-5
+                sm:px-8
+                lg:px-12
+                pt-6
+                sm:pt-8
+                overflow-y-auto
+                scrollbar-none
+            "
+        >
+            {/* Header */}
+            <div className="flex items-center justify-between gap-4">
+                <SheetHeader className="p-0">
+                    <h2 className="text-lg sm:text-xl font-semibold text-[#143163]">
+                        Editar especialidade
+                    </h2>
+                </SheetHeader>
 
-                    <form onSubmit={editDepartament} className="">
+                <SheetClose
+                    className="
+                        shrink-0
+                        flex
+                        items-center
+                        justify-center
+                        w-9
+                        h-9
+                        rounded-lg
+                        bg-[#DBDEE3]
+                        hover:bg-[#C5C9CE]
+                        transition-colors
+                        cursor-pointer
+                    "
+                >
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 42 42"
+                        fill="none"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <path
+                            d="M29.7067 28.2943C30.0973 28.685 30.0973 29.3183 29.7067 29.709C29.512 29.9037 29.256 30.0023 29 30.0023C28.744 30.0023 28.488 29.905 28.2933 29.709L21 22.4156L13.7067 29.709C13.512 29.9037 13.256 30.0023 13 30.0023C12.744 30.0023 12.488 29.905 12.2933 29.709C11.9027 29.3183 11.9027 28.685 12.2933 28.2943L19.5867 21.001L12.2933 13.7077C11.9027 13.317 11.9027 12.6837 12.2933 12.293C12.684 11.9023 13.3173 11.9023 13.708 12.293L21.0013 19.5864L28.2946 12.293C28.6853 11.9023 29.3187 11.9023 29.7093 12.293C30.1 12.6837 30.1 13.317 29.7093 13.7077L22.416 21.001L29.7067 28.2943Z"
+                            fill="#143163"
+                            stroke="#143163"
+                        />
+                    </svg>
+                </SheetClose>
+            </div>
 
+            {/* Form */}
+            <form
+                onSubmit={editDepartament}
+                className="mt-10 sm:mt-12 space-y-6"
+            >
+                {/* Nome */}
+                <div className="space-y-2">
+                    <label
+                        htmlFor="nome"
+                        className="text-sm font-semibold text-[#143163]"
+                    >
+                        Nome da especialidade
+                        <strong className="text-[#ED5656] ml-1">
+                            *
+                        </strong>
+                    </label>
 
-                        <div className="flex flex-col space-y-2 mt-6">
-                            <label className="text-[#143163] text-[14px] font-semibold">Nome<strong className="text-[#ED5656]">*</strong></label>
-                            <input type="text" required value={formData.nome} onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                                className={`h-9 p-2 ring-1 rounded-[6px] ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm`} />
-                        </div><div className="flex flex-col space-y-2 mt-6 w-full">
-                            <label className="text-[#143163] text-[14px] font-semibold">Departamento <strong className="text-[#ED5656]">*</strong></label>
-                            <Select value={String(formData.departamentoId)} required onValueChange={(value) => setFormData({ ...formData, departamentoId: value })}>
-                                <SelectTrigger className="w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm">
-                                    <SelectValue placeholder="Selecione" />
-                                </SelectTrigger>
-                                <SelectContent
-                                    className="ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none ">
-                                    {departaments?.length > 0 && departaments?.map((item: any) => <SelectItem key={item?.id} value={String(item?.id)}>{item?.nome}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="flex flex-col space-y-2 mt-6">
-                            <label className="text-[#143163] text-[14px] font-semibold">Descrição</label>
-                            <textarea required value={formData.descricao} onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                                className={`h-20 p-2 ring-1 rounded-[6px] ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm`} />
-                        </div>
+                    <input
+                        id="nome"
+                        type="text"
+                        required
+                        value={formData.nome}
+                        onChange={(e) =>
+                            setFormData({
+                                ...formData,
+                                nome: e.target.value,
+                            })
+                        }
+                        placeholder="Ex.: Telecomunicações"
+                        className="
+                            w-full
+                            h-11
+                            px-3
+                            rounded-lg
+                            border
+                            border-[#D4D9EA]
+                            bg-white
+                            text-sm
+                            text-[#143163]
+                            placeholder:text-zinc-400
+                            focus:outline-none
+                            focus:border-[#FFC505]
+                            focus:ring-1
+                            focus:ring-[#FFC505]
+                            transition-all
+                        "
+                    />
+                </div>
 
-                        <div className="flex justify-between items-center space-x-4">
-                            <button
-                                onClick={onClose}
-                                className=" w-full p-2 mt-15 rounded-[6px] py-3 mb-10 cursor-pointer bg-[#E6EEFC]  transition duration-150 text-[#0B1437] font-semibold"
-                                type="button">
-                                Cancelar
-                            </button>
-                            <button disabled={loading} className=" w-full p-2 py-3 mt-15 rounded-[6px] mb-10 cursor-pointer bg-[#FC9500]  transition duration-150 text-white font-semibold"
-                                type="submit">
-                                {loading ?
-                                    <div className="flex justify-center items-center">
-                                        <Spinner color="#0B1437" width="5" height="5" />
-                                    </div> : "Salvar alterações"
-                                }
-                            </button>
-                        </div>
-                    </form>
+                {/* Departamento */}
+                <div className="space-y-2">
+                    <label
+                        htmlFor="departamento"
+                        className="text-sm font-semibold text-[#143163]"
+                    >
+                        Departamento
+                        <strong className="text-[#ED5656] ml-1">
+                            *
+                        </strong>
+                    </label>
 
-                </SheetContent>
+                    <Select
+                        value={String(formData.departamentoId)}
+                        required
+                        onValueChange={(value) =>
+                            setFormData({
+                                ...formData,
+                                departamentoId: value,
+                            })
+                        }
+                    >
+                        <SelectTrigger
+                            id="departamento"
+                            className="
+                                w-full
+                                h-11
+                                rounded-lg
+                                border
+                                border-[#D4D9EA]
+                                bg-white
+                                text-sm
+                                text-[#143163]
+                                focus:border-[#FFC505]
+                                focus:ring-1
+                                focus:ring-[#FFC505]
+                                focus:outline-none
+                            "
+                        >
+                            <SelectValue placeholder="Selecione o departamento" />
+                        </SelectTrigger>
 
-            </Sheet >
-        </>
-    )
+                        <SelectContent>
+                            {departaments?.length > 0 ? (
+                                departaments.map((item: any) => (
+                                    <SelectItem
+                                        key={item.id}
+                                        value={String(item.id)}
+                                    >
+                                        {item.nome}
+                                    </SelectItem>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-sm text-zinc-500">
+                                    Nenhum departamento disponível
+                                </div>
+                            )}
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Descrição */}
+                <div className="space-y-2">
+                    <label
+                        htmlFor="descricao"
+                        className="text-sm font-semibold text-[#143163]"
+                    >
+                        Descrição
+                    </label>
+
+                    <textarea
+                        id="descricao"
+                        value={formData.descricao}
+                        onChange={(e) =>
+                            setFormData({
+                                ...formData,
+                                descricao: e.target.value,
+                            })
+                        }
+                        rows={5}
+                        placeholder="Descreva brevemente esta especialidade..."
+                        className="
+                            w-full
+                            min-h-32
+                            px-3
+                            py-3
+                            rounded-lg
+                            border
+                            border-[#D4D9EA]
+                            bg-white
+                            text-sm
+                            text-[#143163]
+                            placeholder:text-zinc-400
+                            resize-none
+                            focus:outline-none
+                            focus:border-[#FFC505]
+                            focus:ring-1
+                            focus:ring-[#FFC505]
+                            transition-all
+                        "
+                    />
+                </div>
+
+                {/* Actions */}
+                <div
+                    className="
+                        flex
+                        flex-col-reverse
+                        sm:flex-row
+                        gap-3
+                        pt-4
+                        pb-4
+                    "
+                >
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        disabled={loading}
+                        className="
+                            w-full
+                            min-h-11
+                            px-4
+                            py-3
+                            rounded-lg
+                            bg-[#E6EEFC]
+                            hover:bg-[#DCE7F8]
+                            text-[#0B1437]
+                            font-semibold
+                            text-sm
+                            transition-colors
+                            cursor-pointer
+                            disabled:opacity-60
+                            disabled:cursor-not-allowed
+                        "
+                    >
+                        Cancelar
+                    </button>
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="
+                            w-full
+                            min-h-11
+                            px-4
+                            py-3
+                            rounded-lg
+                            bg-[#FC9500]
+                            hover:bg-[#E98700]
+                            text-white
+                            font-semibold
+                            text-sm
+                            transition-all
+                            cursor-pointer
+                            disabled:opacity-70
+                            disabled:cursor-not-allowed
+                        "
+                    >
+                        {loading ? (
+                            <div className="flex items-center justify-center gap-2">
+                                <Spinner
+                                    color="#0B1437"
+                                    width="5"
+                                    height="5"
+                                />
+                                <span>A guardar...</span>
+                            </div>
+                        ) : (
+                            "Salvar alterações"
+                        )}
+                    </button>
+                </div>
+            </form>
+        </SheetContent>
+    </Sheet>
+)
+
 }

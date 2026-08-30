@@ -13,6 +13,7 @@ import { api } from "../config/api"
 import { useDepartaments } from "../hooks/useDepartaments"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import { useEspecialities } from "../hooks/useEspecialities"
+import { useTipoTrabalhos } from "../hooks/useTipoTrabalho"
 
 type props = {
     isOpen: boolean,
@@ -23,25 +24,36 @@ type props = {
 export default function UpdateWork({ onClose, isOpen, itemSelected }: props) {
 
     const [loading, setLoading] = useState(false)
+    const tipoDeTrabalho= useTipoTrabalhos()
     const [formData, setFormData] = useState({
         titulo: "",
         resumo: "",
         fileUrl: "",
         departamentoId: "",
-        especialidadesIds: ""
+        especialidadesIds: "",
+        tipo: ""
     })
 
-    useEffect(() => {
-        if (itemSelected) {
-            setFormData({
-                titulo: itemSelected?.titulo ?? "",
-                resumo: itemSelected?.resumo ?? "",
-                fileUrl: itemSelected?.fileUrl ?? "",
-                departamentoId: itemSelected?.departamento?.id ? String(itemSelected.departamento.id) : "",
-                especialidadesIds: itemSelected?.especialidades?.length > 0 ? String(itemSelected.especialidades[0].id) : "",
-            })
-        }
-    }, [itemSelected])
+  useEffect(() => {
+    if (itemSelected) {
+        setFormData({
+            ...formData,
+            titulo: itemSelected.titulo ?? "",
+            resumo: itemSelected.resumo ?? "",
+            fileUrl: itemSelected.fileUrl ?? "",
+            tipo: String(itemSelected?.tipoTrabalho?.id) ?? "",
+            departamentoId: itemSelected.departamento?.id
+                ? String(itemSelected.departamento.id)
+                : "",
+
+            especialidadesIds: itemSelected.especialidades?.[0]?.id
+                ? String(itemSelected.especialidades[0].id)
+                : "",
+        })
+    }
+}, [itemSelected])
+
+console.log(formData)
 
 
     const [formDataFiles, setFormDataFiles] = useState({
@@ -99,7 +111,8 @@ export default function UpdateWork({ onClose, isOpen, itemSelected }: props) {
                 resumo: formData.resumo,
                 fileUrl: urlFile,
                 departamentoId: Number(formData.departamentoId),
-                especialidadesIds: arrayEspecialidades
+                especialidadesIds: arrayEspecialidades,
+                tipoTrabalhoId: Number(formData?.tipo)
             }
 
 
@@ -207,6 +220,20 @@ export default function UpdateWork({ onClose, isOpen, itemSelected }: props) {
                                 <SelectContent
                                     className="ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none ">
                                     {especialitiesFiltered?.length > 0 && especialitiesFiltered?.map((item: any) => <SelectItem key={item?.id} value={String(item?.id)}>{item?.nome}</SelectItem>)}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="flex flex-col space-y-2 mt-6 w-full">
+                            <label className="text-[#143163] text-[14px] font-semibold">Tipo de trabalho <strong className="text-[#ED5656]">*</strong></label>
+                            <Select value={formData.tipo} onValueChange={(value) => setFormData({ ...formData, tipo: value })}>
+                                <SelectTrigger className="w-full ring-1 ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm">
+                                    <SelectValue placeholder="Selecione" />
+                                </SelectTrigger>
+                                <SelectContent
+                                    className="ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none ">
+                                    {tipoDeTrabalho?.map((item: any) =>
+                                     <SelectItem key={item?.id} 
+                                    value={String(item?.id)}>{item?.nome}</SelectItem>)}
                                 </SelectContent>
                             </Select>
                         </div>

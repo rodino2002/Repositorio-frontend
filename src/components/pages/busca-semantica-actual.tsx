@@ -1279,16 +1279,7 @@ export default function BuscaSemanticaActual() {
                                                         Download
                                                     </button>
 
-                                                    {/* TAG */}
-                                                    <button
-                                                        className="
-                                        text-sm
-                                        text-zinc-400
-                                        hover:text-[#141B59]
-                                    "
-                                                    >
-                                                        + Adicionar tags
-                                                    </button>
+                                                    
                                                 </div>
                                             </div>
                                         </div>

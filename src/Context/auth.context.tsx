@@ -11,7 +11,9 @@ type IUser = {
         created_at: string;
         available_sms: number;
         role: "ESTUDANTE" | "ADMIN" | "PROFESSOR" | "AVALIADOR";
-        postpaid: boolean | null
+        postpaid: boolean | null,
+        photo: string,
+        nome: string
     },
     accessToken: string,
     refreshToken: string

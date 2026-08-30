@@ -16,7 +16,7 @@ export default function Layout({ children }: LayoutProps) {
 
         <AppSidebar />
 
-        <div className="bg-[#F2F9FA] hidden">
+        <div className="bg-[#F2F9FA] cursor-pointer hidden lg:block">
           <SidebarTrigger />
         </div>
 

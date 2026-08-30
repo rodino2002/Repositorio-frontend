@@ -40,44 +40,36 @@ const MenuItems: MenuItem[] = [
   {
     title: "Departamentos",
     url: "/departamentos",
-    icon: EstatisticasIcon,
+    icon: DepartamentIcon,
     roles: ["estudante", "admin"],
   },
   {
     title: "Especialidades",
     url: "/especialidades",
-    icon: EstatisticasIcon,
+    icon: EspecialidadeIcon,
     roles: ["estudante", "admin"],
   },
   {
     title: "Trabalhos",
     url: "/trabalhos",
-    icon: EstatisticasIcon,
+    icon: TrabalhoIcon,
     roles: ["estudante", "admin"],
   },
   {
-    title: "Estudantes",
-    url: "/estudantes",
-    icon: EstatisticasIcon,
+    title: "Gestão de Contas",
+    url: "/gestao-de-contas",
+    icon: GestaoDeContasIcon,
     roles: ["admin"],
-  },
-  {
-    title: "Docentes",
-    url: "/docentes",
-    icon: EstatisticasIcon,
-    roles: ["admin"],
-  },
-  {
-    title: "Avaliadores",
-    url: "/avaliadores",
-    icon: EstatisticasIcon,
-    roles: ["admin"],
-  },
+  }
 ];
 
 import { ChevronRight } from "lucide-react"; // ícones bacanas
-import EstatisticasIcon from "../../assets/sidebarIcons/iconsTeste";
 import { AuthContext } from "@/Context/auth.context";
+import DepartamentIcon from "@/assets/sidebarIcons/departamentoIcon";
+import EspecialidadeIcon from "@/assets/sidebarIcons/especialidadeIcon";
+import GestaoDeContasIcon from "@/assets/sidebarIcons/GestaoDeContasIcon";
+import TrabalhoIcon from "@/assets/sidebarIcons/trabalhoIcon";
+import EstatisticasIcon from "@/assets/sidebarIcons/dashboardIcon";
 
 export function AppSidebar() {
   const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});
@@ -96,12 +88,12 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="text-sm flex text-[#0B1437] " >
+    <Sidebar className="text-sm flex text-[#0B1437]" >
       <SidebarHeader className="bg-[#ffffff] border-b-2 border-b-[#F4F7FE]">
         <nav className="flex items-center  justify-center h-[150px]">
           <NavLink to="/">
             <div className="flex justify-center w-full">
-              <img src="/logo.png" className="w-40 h-40 animate-pulse" />
+              <img src="/logo.png" className="w-30 h-30 animate-pulse" />
             </div>
           </NavLink>
         </nav>

@@ -119,26 +119,46 @@ export default function Trabalhos() {
     }, [searchInput]);
 
 
-    const filteredHistorics = useMemo(() => {
-        if (!paginatedHistorics.length) return [];
+    const normalizeText = (value: unknown) =>
+    String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLowerCase()
+        .trim();
 
-        if (!normalizedSearch) {
-            return paginatedHistorics;
-        }
+const filteredHistorics = useMemo(() => {
+    if (!paginatedHistorics?.length) return [];
 
-        return paginatedHistorics.filter((item: any) => {
-            const fields = [
-                item?.nome,
-                item?.createdAt,
-            ];
+    if (!normalizedSearch?.trim()) {
+        return paginatedHistorics;
+    }
 
-            return fields.some(field =>
-                String(field ?? "")
-                    .toLowerCase()
-                    .includes(normalizedSearch)
-            );
-        });
-    }, [paginatedHistorics, normalizedSearch]);
+    const search = normalizeText(normalizedSearch);
+
+    return paginatedHistorics.filter((item: any) => {
+        const createdAt = item?.createdAt
+            ? new Date(item.createdAt).toLocaleDateString("pt-BR")
+            : "";
+
+        const fields = [
+            item?.titulo,
+            item?.resumo,
+            item?.autor?.nome,
+            item?.departamento?.nome,
+            item?.status,
+            createdAt,
+
+            // Todas as especialidades
+            ...(item?.especialidades?.map(
+                (especialidade: any) => especialidade?.nome
+            ) ?? []),
+        ];
+
+        return fields.some((field) =>
+            normalizeText(field).includes(search)
+        );
+    });
+}, [paginatedHistorics, normalizedSearch]);
 
 
     const handleSearch = (value?: string) => {
