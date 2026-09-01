@@ -35,32 +35,38 @@ const MenuItems: MenuItem[] = [
     title: "Dashboard",
     url: "/",
     icon: EstatisticasIcon,
-    roles: ["estudante", "admin"],
+    roles: ["estudante", "admin", "avaliador", "professor"],
   },
   {
     title: "Departamentos",
     url: "/departamentos",
     icon: DepartamentIcon,
-    roles: ["estudante", "admin"],
+    roles: ["estudante", "admin", "avaliador", "professor"],
   },
   {
     title: "Especialidades",
     url: "/especialidades",
     icon: EspecialidadeIcon,
-    roles: ["estudante", "admin"],
+    roles: ["estudante", "admin", "avaliador", "professor"],
   },
   {
     title: "Trabalhos",
     url: "/trabalhos",
     icon: TrabalhoIcon,
-    roles: ["estudante", "admin"],
+    roles: ["estudante", "admin", "avaliador"],
   },
   {
     title: "Gestão de Contas",
     url: "/gestao-de-contas",
     icon: GestaoDeContasIcon,
     roles: ["admin"],
-  }
+  },
+  {
+    title: "Meu perfil",
+    url: "/meu-perfil",
+    icon: MeuPerfilIcon,
+    roles: ["estudante", "admin", "avaliador", "professor"],
+  },
 ];
 
 import { ChevronRight } from "lucide-react"; // ícones bacanas
@@ -70,6 +76,7 @@ import EspecialidadeIcon from "@/assets/sidebarIcons/especialidadeIcon";
 import GestaoDeContasIcon from "@/assets/sidebarIcons/GestaoDeContasIcon";
 import TrabalhoIcon from "@/assets/sidebarIcons/trabalhoIcon";
 import EstatisticasIcon from "@/assets/sidebarIcons/dashboardIcon";
+import MeuPerfilIcon from "@/assets/sidebarIcons/meu-perfil";
 
 export function AppSidebar() {
   const [openMenus, setOpenMenus] = useState<{ [key: string]: boolean }>({});

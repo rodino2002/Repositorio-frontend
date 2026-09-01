@@ -11,9 +11,9 @@ import Estudantes from "../pages/gestao_de_contas"
 import Trabalhos from "../pages/works"
 import Especialidades from "../pages/especialities"
 import Departamentos from "../pages/departaments"
-import SemanticTCCSearchLanding from "../pages/busca-semantica"
 import ISPBLandingPage from "../pages/landingPageRepo"
 import BuscaSemanticaActual from "../pages/busca-semantica-actual"
+import MeuPerfil from "../pages/meuPerfil"
 
 export const Routers = () => {
     const { isAuthenticated } = useContext(AuthContext);
@@ -40,6 +40,7 @@ export const Routers = () => {
                         <Route path='/trabalhos' element={<Trabalhos />} />
                         <Route path='/especialidades' element={<Especialidades />} />
                         <Route path='/departamentos' element={<Departamentos />} />
+                        <Route path='/meu-perfil' element={<MeuPerfil />} />
                     </Route>
 
                 </Routes>

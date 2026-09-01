@@ -4,11 +4,14 @@ import { UserAvatar } from "../utils/useAvatar";
 import { Dialog, DialogClose, DialogContent, DialogTrigger } from "../ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { SidebarTrigger } from "../ui/sidebar";
+import { useDetails } from "../hooks/useDetails";
 
 export default function Header() {
 
     const [logoutIsloading, setLogoutIsLoading] = useState(false);
     const { logout, user } = useContext(AuthContext)
+
+    const {data: details} = useDetails();
 
 
     const handleLogout = async (e: any) => {
@@ -85,7 +88,7 @@ export default function Header() {
                         overflow-hidden
                     "
                     >
-                        <UserAvatar photo={user?.usuario?.photo} />
+                        <UserAvatar photo={details?.photo} />
                     </div>
 
                     {/* Nome / Role */}
@@ -102,7 +105,7 @@ export default function Header() {
                             lg:max-w-none
                         "
                         >
-                            {user?.usuario?.nome || "Utilizador"}
+                            {details?.nome || "Utilizador"}
                         </h1>
 
                         <p
@@ -114,7 +117,7 @@ export default function Header() {
                             truncate
                         "
                         >
-                            {user?.usuario?.role}
+                            {details?.role}
                         </p>
                     </div>
                 </div>
