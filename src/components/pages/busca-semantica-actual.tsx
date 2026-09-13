@@ -14,6 +14,8 @@ import { useEspecialities } from "../hooks/useEspecialities";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
 import Carrossel from "../busca-semantica/carrosssel";
 import { useTipoTrabalhos } from "../hooks/useTipoTrabalho";
+import { ResultsSkeleton } from "../utils/trabalhosSkeletom";
+import DetalhesTrabalho from "../detlhesTrabalho/detalhes";
 
 // 1. Captura o ano atual dinamicamente (ex: 2026)
 const anoAtual = new Date().getFullYear();
@@ -70,26 +72,45 @@ export default function BuscaSemanticaActual() {
     function normalizeWorksResponse(data: any) {
         const isSemantic = Array.isArray(data?.resultados)
 
-        const items = isSemantic ? data.resultados : data.dados
+        const items = isSemantic
+            ? data.resultados
+            : data?.dados || []
+
+        const recomendados = isSemantic
+            ? data?.trabalhosRecomendados || []
+            : []
+
+        const normalizeItem = (item: any) => ({
+            id: item.id,
+            titulo: item.titulo,
+            resumo: item.resumo,
+            fileUrl: item.fileUrl,
+            status: item.status,
+            createdAt: item.createdAt,
+
+            autor: item.autor,
+            departamento: item.departamento,
+            especialidades: item.especialidades,
+            tipoTrabalho: item.tipoTrabalho,
+
+            score: item.score ?? item.similarity ?? null,
+
+            semanticScore: item.semanticScore ?? null,
+            recommendationScore: item.recommendationScore ?? null,
+        })
 
         return {
-            total: isSemantic ? data.totalEncontrados : data.paginacao?.totalItems,
-            items: items.map((item: any) => ({
-                id: item.id,
-                titulo: item.titulo,
-                resumo: item.resumo,
-                fileUrl: item.fileUrl,
-                status: item.status,
-                createdAt: item.createdAt,
-                autor: item.autor,
-                departamento: item.departamento,
-                especialidades: item.especialidades,
-                tipoTrabalho: item.tipoTrabalho,
+            totalEncontrados: isSemantic
+                ? data?.totalEncontrados ?? items.length
+                : data?.paginacao?.totalItems ?? items.length,
 
-                // unifica ranking da busca semântica
-                score: item.score ?? item.similarity ?? null,
-            })),
+            query: isSemantic
+                ? data?.query ?? ""
+                : "",
 
+            items: items.map(normalizeItem),
+
+            trabalhosRecomendados: recomendados.map(normalizeItem),
         }
     }
 
@@ -97,7 +118,7 @@ export default function BuscaSemanticaActual() {
         try {
             if (filters.searchTerm.trim()) {
                 const { data } = await api.post(
-                    "trabalhos/buscar-inteligente",
+                    "semantic/buscar-inteligente",
                     { query: filters.searchTerm }
                 )
 
@@ -199,6 +220,8 @@ export default function BuscaSemanticaActual() {
             })
         }
     }, [periodoEspecifico])
+
+    const [itemSelected, setItemSelected] = useState<any | null>(null)
 
 
     return (
@@ -1047,158 +1070,303 @@ export default function BuscaSemanticaActual() {
 
                         </div>
                     </section>
+
                     {/* RESULTADOS */}
+
                     <div className="max-w-7xl mx-auto px-6 lg:px-10 mt-10">
-                        {data?.items?.length > 0 ? (
-                            <div className="border-t border-zinc-200">
-                                {data?.items.map((item: any) => (
-                                    <article
-                                        key={item.id}
-                                        className="
-                        group
-                        relative
-                        py-6
-                        border-b border-zinc-200
-                        transition-colors
-                        hover:bg-zinc-50/70
-                    "
-                                    >
-                                        <div className="flex gap-4">
-                                            
 
-                                            {/* CONTEÚDO */}
-                                            <div className="min-w-0 flex-1">
+                        {itemSelected ? (
 
-                                                {/* TÍTULO + SCORE */}
-                                                <div className="flex items-start justify-between gap-4">
-                                                    <div className="min-w-0">
-                                                        <h3
-                                                            title={item?.titulo}
-                                                            className="
-                                            text-[17px]
-                                            font-semibold
-                                            leading-6
-                                            text-[#1B4F9C]
-                                            hover:text-[#141B59]
-                                            hover:underline
-                                            cursor-pointer
-                                        "
-                                                        >
-                                                            {item.titulo}
-                                                        </h3>
+                            <DetalhesTrabalho
+                                trabalho={itemSelected}
+                                onVoltar={() => setItemSelected(null)}
+                                
+                            />
 
-                                                        {/* AUTOR / ANO */}
-                                                        <div className="mt-1 flex flex-wrap items-center gap-x-2 text-sm">
-                                                            <span className="text-zinc-600">
-                                                                {item.autor?.nome || "Autor não informado"}
-                                                            </span>
+                        ) : isLoading || isRefetching ? (
+                            <ResultsSkeleton />
+                        ) :
+                            data?.items?.length > 0 ? (
 
-                                                            <span className="text-zinc-400">·</span>
+                                <div>
 
-                                                            <span className="text-zinc-500">
-                                                                {item.createdAt
-                                                                    ? new Date(item.createdAt).getFullYear()
-                                                                    : "Ano não informado"}
-                                                            </span>
-                                                        </div>
+                                    {/* CABEÇALHO DOS RESULTADOS */}
+                                    <div className="mb-6">
+
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+
+                                            {/* INFORMAÇÕES DA PESQUISA */}
+                                            <div>
+                                                <div className="flex items-center gap-2">
+
+                                                    <h2 className="text-lg font-semibold text-[#141B59]">
+                                                        Resultados da pesquisa
+                                                    </h2>
+
+                                                    <span className="inline-flex items-center rounded-full bg-[#141B59]/5 px-2.5 py-1 text-[11px] font-medium text-[#141B59]">
+                                                        Busca inteligente
+                                                    </span>
+
+                                                </div>
+
+                                                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-500">
+
+                                                    <span>
+                                                        {data?.totalEncontrados || data?.items?.length || 0}{" "}
+                                                        {(data?.totalEncontrados || data?.items?.length || 0) === 1
+                                                            ? "trabalho encontrado"
+                                                            : "trabalhos encontrados"}
+                                                    </span>
+
+                                                    <span className="text-zinc-300">•</span>
+
+                                                    <span>
+                                                        Pesquisa semântica
+                                                    </span>
+
+                                                    <span className="text-zinc-300">•</span>
+
+                                                    <span>
+                                                        Ordenados por relevância
+                                                    </span>
+
+                                                </div>
+                                            </div>
+
+                                            {/* QUERY PESQUISADA */}
+                                            {data?.query && (
+                                                <div className="max-w-full sm:max-w-md">
+
+                                                    <p className="text-xs text-zinc-400 mb-1">
+                                                        Pesquisa realizada
+                                                    </p>
+
+                                                    <p
+                                                        title={data.query}
+                                                        className="
+                                    text-sm
+                                    text-zinc-600
+                                    line-clamp-2
+                                "
+                                                    >
+                                                        "{data.query}"
+                                                    </p>
+
+                                                </div>
+                                            )}
+
+                                        </div>
+
+                                    </div>
+
+
+                                    {/* LISTA DE RESULTADOS */}
+
+                                    <div className="border-t border-zinc-200">
+
+                                        {data?.items.map((item: any, index: number) => (
+
+                                            <article
+                                                key={item.id}
+                                                className="
+                            group
+                            relative
+                            py-6
+                            border-b
+                            border-zinc-200
+                            transition-colors
+                            hover:bg-zinc-50/70
+                        "
+                                            >
+
+                                                <div className="flex gap-4">
+
+                                                    {/* POSIÇÃO DO RESULTADO */}
+
+                                                    <div
+                                                        className="
+                                    hidden
+                                    sm:flex
+                                    shrink-0
+                                    w-8
+                                    pt-1
+                                    justify-center
+                                "
+                                                    >
+                                                        <span className="text-xs font-medium text-zinc-400">
+                                                            {String(index + 1).padStart(2, "0")}
+                                                        </span>
                                                     </div>
 
-                                                    {/* SCORE */}
-                                                    {item.score !== undefined && item.score !== null && (
-                                                        <span
-                                                            title="Grau de similaridade com a pesquisa"
-                                                            className="
-                                            shrink-0
-                                            text-xs
-                                            font-medium
-                                            text-zinc-500
-                                            whitespace-nowrap
-                                        "
-                                                        >
-                                                            Similaridade: {(item.score * 100).toFixed(0)}%
-                                                        </span>
-                                                    )}
-                                                </div>
 
-                                                {/* METADADOS */}
-                                                <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
-                                                    <span className="text-zinc-500">
-                                                        {item.departamento?.nome || "Departamento"}
-                                                    </span>
+                                                    {/* CONTEÚDO */}
 
-                                                    <span className="text-zinc-300">•</span>
+                                                    <div className="min-w-0 flex-1">
 
-                                                    <span className="text-zinc-500">
-                                                        {item.tipoTrabalho?.nome || "Tipo de trabalho"}
-                                                    </span>
+                                                        {/* TÍTULO + RELEVÂNCIA */}
 
-                                                    {item?.especialidades?.[0]?.nome && (
-                                                        <>
-                                                            <span className="text-zinc-300">•</span>
+                                                        <div className="flex items-start justify-between gap-4">
 
-                                                            <span className="text-[#B7791F]">
-                                                                {item.especialidades[0].nome}
-                                                            </span>
-                                                        </>
-                                                    )}
+                                                            <div className="min-w-0">
 
-                                                    <span className="text-zinc-300">•</span>
-
-                                                    <span
-                                                        className={`
-                                        font-medium
-                                        ${item?.status === "APROVADO"
-                                                                ? "text-green-600"
-                                                                : item?.status === "RECUSADO"
-                                                                    ? "text-red-600"
-                                                                    : "text-yellow-600"
-                                                            }
-                                    `}
-                                                    >
-                                                        {capitalize(item?.status || "N/A")}
-                                                    </span>
-                                                </div>
-
-                                                {/* RESUMO */}
-                                                <p
-                                                    className="
-                                    mt-3
-                                    max-w-5xl
-                                    text-sm
-                                    leading-6
-                                    text-zinc-600
-                                    line-clamp-3
-                                "
-                                                >
-                                                    {item.resumo || "Resumo não disponível."}
-                                                </p>
-
-                                                {/* AÇÕES */}
-                                                <div className="mt-4 flex items-center gap-4">
-
-                                                    {/* PREVIEW */}
-                                                    <Dialog
-                                                        open={previewOpen}
-                                                        onOpenChange={setPreviewOpen}
-                                                    >
-                                                        <DialogTrigger asChild>
-                                                            <button
-                                                                onClick={() =>
-                                                                    handlePreview(item.fileUrl)
-                                                                }
-                                                                className="
-                                                inline-flex
-                                                items-center
-                                                gap-1.5
-                                                text-sm
-                                                font-medium
-                                                text-[#141B59]
-                                                hover:text-[#1C2675]
+                                                                <h3
+                                                                    title={item?.titulo}
+                                                                    className="
+                                                text-[17px]
+                                                font-semibold
+                                                leading-6
+                                                text-[#1B4F9C]
+                                                hover:text-[#141B59]
                                                 hover:underline
+                                                cursor-pointer
                                             "
+                                                                >
+                                                                    {item.titulo}
+                                                                </h3>
+
+
+                                                                {/* AUTOR / ANO */}
+
+                                                                <div className="mt-1 flex flex-wrap items-center gap-x-2 text-sm">
+
+                                                                    <span className="text-zinc-600">
+                                                                        {item.autor?.nome || "Autor não informado"}
+                                                                    </span>
+
+                                                                    <span className="text-zinc-400">
+                                                                        ·
+                                                                    </span>
+
+                                                                    <span className="text-zinc-500">
+
+                                                                        {item.createdAt
+                                                                            ? new Date(item.createdAt).getFullYear()
+                                                                            : "Ano não informado"}
+
+                                                                    </span>
+
+                                                                </div>
+
+                                                            </div>
+
+
+                                                            {/* RELEVÂNCIA */}
+
+                                                            {item.score !== undefined &&
+                                                                item.score !== null && (
+
+                                                                    <div
+                                                                        title="Grau de relevância do trabalho em relação à pesquisa"
+                                                                        className="
+                                                    shrink-0
+                                                    text-xs
+                                                    font-medium
+                                                    text-zinc-500
+                                                    whitespace-nowrap
+                                                "
+                                                                    >
+
+                                                                        Relevância:{" "}
+
+                                                                        <span className="text-[#141B59]">
+                                                                            {(item.score * 100).toFixed(0)}%
+                                                                        </span>
+
+                                                                    </div>
+
+                                                                )}
+
+                                                        </div>
+
+
+                                                        {/* METADADOS */}
+
+                                                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+
+                                                            <span className="text-zinc-500">
+                                                                {item.departamento?.nome || "Departamento"}
+                                                            </span>
+
+                                                            <span className="text-zinc-300">
+                                                                •
+                                                            </span>
+
+                                                            <span className="text-zinc-500">
+                                                                {item.tipoTrabalho?.nome || "Tipo de trabalho"}
+                                                            </span>
+
+
+                                                            {item?.especialidades?.[0]?.nome && (
+                                                                <>
+                                                                    <span className="text-zinc-300">
+                                                                        •
+                                                                    </span>
+
+                                                                    <span className="text-[#B7791F]">
+                                                                        {item.especialidades[0].nome}
+                                                                    </span>
+                                                                </>
+                                                            )}
+
+
+                                                            <span className="text-zinc-300">
+                                                                •
+                                                            </span>
+
+
+                                                            <span
+                                                                className={`
+                                            font-medium
+                                            ${item?.status === "APROVADO"
+                                                                        ? "text-green-600"
+                                                                        : item?.status === "RECUSADO"
+                                                                            ? "text-red-600"
+                                                                            : "text-yellow-600"
+                                                                    }
+                                        `}
                                                             >
+                                                                {capitalize(item?.status || "N/A")}
+                                                            </span>
+
+                                                        </div>
+
+
+                                                        {/* RESUMO */}
+
+                                                        <p
+                                                            className="
+                                        mt-3
+                                        max-w-5xl
+                                        text-sm
+                                        leading-6
+                                        text-zinc-600
+                                        line-clamp-3
+                                    "
+                                                        >
+                                                            {item.resumo || "Resumo não disponível."}
+                                                        </p>
+
+
+                                                        {/* AÇÕES */}
+
+                                                        <div className="mt-4 flex items-center gap-4">
+                                                            {/* DETALHES */}
+
+                                                            <button
+                                                                onClick={() => setItemSelected(item)}
+                                                                className="
+                                                                    inline-flex
+                                                                    items-center
+                                                                    gap-1.5
+                                                                    text-sm
+                                                                    font-medium
+                                                                    text-[#141B59]
+                                                                    hover:text-[#1B4F9C]
+                                                                    hover:underline
+                                                                "
+                                                            >
+
                                                                 <svg
-                                                                    xmlns="http://www.w3.org/2000/svg"
                                                                     width="16"
                                                                     height="16"
                                                                     viewBox="0 0 24 24"
@@ -1208,114 +1376,484 @@ export default function BuscaSemanticaActual() {
                                                                     strokeLinecap="round"
                                                                     strokeLinejoin="round"
                                                                 >
-                                                                    <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
-                                                                    <circle
-                                                                        cx="12"
-                                                                        cy="12"
-                                                                        r="3"
-                                                                    />
+                                                                    <path d="M15 3h6v6" />
+                                                                    <path d="M10 14 21 3" />
+                                                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
                                                                 </svg>
 
-                                                                Visualizar
+                                                                Detalhes
+
                                                             </button>
-                                                        </DialogTrigger>
 
-                                                        <DialogContent
-                                                            className="
-                                            max-w-6xl
-                                            p-0
-                                            overflow-hidden
-                                            border-none
-                                            bg-white
-                                            rounded-2xl
-                                            shadow-2xl
-                                        "
-                                                        >
-                                                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                                                                <h2 className="text-lg font-semibold text-gray-800">
-                                                                    Visualizar Trabalho
-                                                                </h2>
-                                                            </div>
+                                                            {/* DOWNLOAD */}
 
-                                                            <div className="w-full h-[80vh] bg-white">
-                                                                <iframe
-                                                                    src={selectedFile || ""}
-                                                                    className="w-full h-full bg-white"
-                                                                />
-                                                            </div>
-                                                        </DialogContent>
-                                                    </Dialog>
+                                                            <button
+                                                                onClick={() => downloadFunction(item)}
+                                                                className="
+                                                                    inline-flex
+                                                                    items-center
+                                                                    gap-1.5
+                                                                    text-sm
+                                                                    font-medium
+                                                                    text-[#FC9500]
+                                                                    hover:text-[#E88900]
+                                                                    hover:underline
+                                                                "
+                                                            >
 
-                                                    {/* DOWNLOAD */}
-                                                    <button
-                                                        onClick={() => downloadFunction(item)}
-                                                        className="
-                                        inline-flex
-                                        items-center
-                                        gap-1.5
-                                        text-sm
-                                        font-medium
-                                        text-[#FC9500]
-                                        hover:text-[#E88900]
-                                        hover:underline
-                                    "
-                                                    >
-                                                        <svg
-                                                            xmlns="http://www.w3.org/2000/svg"
-                                                            width="16"
-                                                            height="16"
-                                                            viewBox="0 0 24 24"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            strokeWidth="2"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                        >
-                                                            <path d="M12 15V3" />
-                                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                                            <path d="m7 10 5 5 5-5" />
-                                                        </svg>
+                                                                <svg
+                                                                    width="16"
+                                                                    height="16"
+                                                                    viewBox="0 0 24 24"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                >
+                                                                    <path d="M12 3v12" />
+                                                                    <path d="m7 10 5 5 5-5" />
+                                                                    <path d="M5 21h14" />
+                                                                </svg>
 
-                                                        Download
-                                                    </button>
+                                                                Download
 
-                                                    
+                                                            </button>
+
+                                                        </div>
+
+                                                    </div>
+
                                                 </div>
-                                            </div>
-                                        </div>
-                                    </article>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-20 text-center">
-                                <div className="w-20 h-20 rounded-full bg-zinc-100 flex items-center justify-center mb-5">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        width="34"
-                                        height="34"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="#94A3B8"
-                                        strokeWidth="1.7"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    >
-                                        <circle cx="11" cy="11" r="8" />
-                                        <path d="m21 21-4.3-4.3" />
-                                    </svg>
+
+                                            </article>
+
+                                        ))}
+
+                                    </div>
+
                                 </div>
 
-                                <h3 className="text-xl font-bold text-[#0B1437]">
-                                    Nenhum resultado encontrado
-                                </h3>
+                            ) : (
 
-                                <p className="text-zinc-500 mt-2 max-w-md leading-relaxed">
-                                    Tente ajustar os filtros ou utilizar palavras-chave
-                                    diferentes na pesquisa semântica.
-                                </p>
-                            </div>
+                                /* SEM RESULTADOS */
+
+                                <div className="flex flex-col items-center justify-center py-20 text-center">
+
+                                    <div
+                                        className="
+                    mb-4
+                    flex
+                    h-14
+                    w-14
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-zinc-100
+                    text-zinc-400
+                "
+                                    >
+
+                                        <svg
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <circle cx="11" cy="11" r="7" />
+                                            <path d="m20 20-4-4" />
+                                        </svg>
+
+                                    </div>
+
+
+                                    <h3 className="text-base font-semibold text-[#141B59]">
+                                        Nenhum resultado encontrado
+                                    </h3>
+
+
+                                    <p className="mt-1 max-w-md text-sm leading-6 text-zinc-500">
+                                        Tente ajustar os filtros ou utilizar palavras-chave
+                                        diferentes na pesquisa semântica.
+                                    </p>
+
+                                </div>
+
+                            )}
+
+                        {/* TRABALHOS RECOMENDADOS */}
+
+                        {data?.trabalhosRecomendados?.length > 0 && (
+                            <section className="mt-14">
+
+                                {/* CABEÇALHO */}
+
+                                <div className="mb-6">
+
+                                    <div className="flex items-center gap-2">
+
+                                        <h2 className="text-lg font-semibold text-[#141B59]">
+                                            Trabalhos relacionados
+                                        </h2>
+
+                                        <span className="
+                    inline-flex
+                    items-center
+                    rounded-full
+                    bg-[#FC9500]/10
+                    px-2.5
+                    py-1
+                    text-[11px]
+                    font-medium
+                    text-[#B7791F]
+                ">
+                                            Recomendações
+                                        </span>
+
+                                    </div>
+
+                                    <p className="mt-1 text-sm text-zinc-500">
+                                        Outros trabalhos académicos semanticamente relacionados
+                                        com os resultados desta pesquisa.
+                                    </p>
+
+                                </div>
+
+
+                                {/* LISTA */}
+                                <div className="border-t border-zinc-200">
+
+                                    {data?.trabalhosRecomendados?.length > 0 && (data?.trabalhosRecomendados.map(
+                                        (item: any, index: number) => (
+
+                                            <article
+                                                key={item.id}
+                                                className="
+                            group
+                            relative
+                            py-6
+                            border-b
+                            border-zinc-200
+                            transition-colors
+                            hover:bg-zinc-50/70
+                        "
+                                            >
+
+                                                <div className="flex gap-4">
+
+                                                    {/* POSIÇÃO */}
+
+                                                    <div
+                                                        className="
+                                    hidden
+                                    sm:flex
+                                    shrink-0
+                                    w-8
+                                    pt-1
+                                    justify-center
+                                "
+                                                    >
+                                                        <span className="text-xs font-medium text-zinc-400">
+                                                            {String(index + 1).padStart(2, "0")}
+                                                        </span>
+                                                    </div>
+
+
+                                                    {/* CONTEÚDO */}
+
+                                                    <div className="min-w-0 flex-1">
+
+                                                        {/* TÍTULO + RELEVÂNCIA */}
+
+                                                        <div className="
+                                    flex
+                                    items-start
+                                    justify-between
+                                    gap-4
+                                ">
+
+                                                            <div className="min-w-0">
+
+                                                                <h3
+                                                                    title={item?.titulo}
+                                                                    className="
+                                                text-[17px]
+                                                font-semibold
+                                                leading-6
+                                                text-[#1B4F9C]
+                                                hover:text-[#141B59]
+                                                hover:underline
+                                                cursor-pointer
+                                            "
+                                                                >
+                                                                    {item.titulo}
+                                                                </h3>
+
+
+                                                                {/* AUTOR / ANO */}
+
+                                                                <div className="
+                                            mt-1
+                                            flex
+                                            flex-wrap
+                                            items-center
+                                            gap-x-2
+                                            text-sm
+                                        ">
+
+                                                                    <span className="text-zinc-600">
+                                                                        {item.autor?.nome ||
+                                                                            "Autor não informado"}
+                                                                    </span>
+
+                                                                    <span className="text-zinc-400">
+                                                                        ·
+                                                                    </span>
+
+                                                                    <span className="text-zinc-500">
+                                                                        {item.createdAt
+                                                                            ? new Date(
+                                                                                item.createdAt
+                                                                            ).getFullYear()
+                                                                            : "Ano não informado"}
+                                                                    </span>
+
+                                                                </div>
+
+                                                            </div>
+
+
+                                                            {/* RELEVÂNCIA */}
+
+                                                            {item.recommendationScore !== null && (
+                                                                <div
+                                                                    title="Grau de relação deste trabalho com os resultados da pesquisa"
+                                                                    className="
+                                                shrink-0
+                                                text-xs
+                                                font-medium
+                                                text-zinc-500
+                                                whitespace-nowrap
+                                            "
+                                                                >
+
+                                                                    Relação:{" "}
+
+                                                                    <span className="text-[#141B59]">
+                                                                        {(
+                                                                            item.recommendationScore *
+                                                                            100
+                                                                        ).toFixed(0)}
+                                                                        %
+                                                                    </span>
+
+                                                                </div>
+                                                            )}
+
+                                                        </div>
+
+
+                                                        {/* METADADOS */}
+
+                                                        <div className="
+                                    mt-3
+                                    flex
+                                    flex-wrap
+                                    items-center
+                                    gap-2
+                                    text-xs
+                                ">
+
+                                                            <span className="text-zinc-500">
+                                                                {item.departamento?.nome ||
+                                                                    "Departamento"}
+                                                            </span>
+
+                                                            <span className="text-zinc-300">
+                                                                •
+                                                            </span>
+
+                                                            <span className="text-zinc-500">
+                                                                {item.tipoTrabalho?.nome ||
+                                                                    "Tipo de trabalho"}
+                                                            </span>
+
+
+                                                            {item?.especialidades?.[0]?.nome && (
+                                                                <>
+                                                                    <span className="text-zinc-300">
+                                                                        •
+                                                                    </span>
+
+                                                                    <span className="text-[#B7791F]">
+                                                                        {item.especialidades[0].nome}
+                                                                    </span>
+                                                                </>
+                                                            )}
+
+                                                        </div>
+
+
+                                                        {/* RESUMO */}
+
+                                                        <p
+                                                            className="
+                                        mt-3
+                                        max-w-5xl
+                                        text-sm
+                                        leading-6
+                                        text-zinc-600
+                                        line-clamp-3
+                                    "
+                                                        >
+                                                            {item.resumo ||
+                                                                "Resumo não disponível."}
+                                                        </p>
+
+
+                                                        {/* AÇÕES */}
+
+                                                        <div className="
+                                    mt-4
+                                    flex
+                                    items-center
+                                    gap-4
+                                ">
+
+                                                            {/* VISUALIZAR */}
+
+                                                            <Dialog
+                                                                open={previewOpen}
+                                                                onOpenChange={setPreviewOpen}
+                                                            >
+
+                                                                <DialogTrigger asChild>
+
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            handlePreview(
+                                                                                item.fileUrl
+                                                                            )
+                                                                        }
+                                                                        className="
+                                                    inline-flex
+                                                    items-center
+                                                    gap-1.5
+                                                    text-sm
+                                                    font-medium
+                                                    text-[#141B59]
+                                                    hover:text-[#1C2675]
+                                                    hover:underline
+                                                "
+                                                                    >
+
+                                                                        <svg
+                                                                            width="16"
+                                                                            height="16"
+                                                                            viewBox="0 0 24 24"
+                                                                            fill="none"
+                                                                            stroke="currentColor"
+                                                                            strokeWidth="2"
+                                                                            strokeLinecap="round"
+                                                                            strokeLinejoin="round"
+                                                                        >
+                                                                            <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                                                                            <circle
+                                                                                cx="12"
+                                                                                cy="12"
+                                                                                r="3"
+                                                                            />
+                                                                        </svg>
+
+                                                                        Visualizar
+
+                                                                    </button>
+
+                                                                </DialogTrigger>
+
+
+                                                                <DialogContent
+                                                                    className="
+                                                max-w-6xl
+                                                p-0
+                                                overflow-hidden
+                                                border-none
+                                                bg-white
+                                                rounded-2xl
+                                                shadow-2xl
+                                            "
+                                                                >
+
+                                                                    <iframe
+                                                                        src={selectedFile || ""}
+                                                                        className="w-full h-[80vh]"
+                                                                        title="Visualização do trabalho"
+                                                                    />
+
+                                                                </DialogContent>
+
+                                                            </Dialog>
+
+
+                                                            {/* DOWNLOAD */}
+
+                                                            <button
+                                                                onClick={() =>
+                                                                    downloadFunction(item)
+                                                                }
+                                                                className="
+                                            inline-flex
+                                            items-center
+                                            gap-1.5
+                                            text-sm
+                                            font-medium
+                                            text-[#FC9500]
+                                            hover:text-[#E88900]
+                                            hover:underline
+                                        "
+                                                            >
+
+                                                                <svg
+                                                                    width="16"
+                                                                    height="16"
+                                                                    viewBox="0 0 24 24"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                >
+                                                                    <path d="M12 3v12" />
+                                                                    <path d="m7 10 5 5 5-5" />
+                                                                    <path d="M5 21h14" />
+                                                                </svg>
+
+                                                                Download
+
+                                                            </button>
+
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+
+                                            </article>
+
+                                        )
+                                    ))}
+
+                                </div>
+
+
+                            </section>
                         )}
                     </div>
+
 
                     {/* CTA */}
                     <section className="pb-20 px-6 lg:px-10 mt-10">

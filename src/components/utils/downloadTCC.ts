@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 
 export async function downloadFunction(item: any) {
-        if (!item?.fileUrl) return;
+        if (!item?.fileUrl) return toast.warning("Nenhum ficheiro encontrado!");
 
         try {
 

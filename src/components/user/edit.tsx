@@ -342,7 +342,7 @@ export default function EditUser({ onClose, isOpen, itemSelected }: props) {
                                 {loading ?
                                     <div className="flex justify-center items-center">
                                         <Spinner color="#0B1437" width="5" height="5" />
-                                    </div> : "Criar"
+                                    </div> : "Editar"
                                 }
                             </button>
                         </div>
