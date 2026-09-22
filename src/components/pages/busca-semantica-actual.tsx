@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "../config/api";
 import { capitalize } from "../helpers/capitalize";
 import { downloadFunction } from "../utils/downloadTCC";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
     Dialog,
     DialogContent,
@@ -16,6 +16,12 @@ import Carrossel from "../busca-semantica/carrosssel";
 import { useTipoTrabalhos } from "../hooks/useTipoTrabalho";
 import { ResultsSkeleton } from "../utils/trabalhosSkeletom";
 import DetalhesTrabalho from "../detlhesTrabalho/detalhes";
+import { LogOut, UserRound } from "lucide-react";
+import { AuthContext } from "@/Context/auth.context";
+import { isAxiosError } from "axios";
+import { toast, Toaster } from "sonner";
+import { Spinner } from "../utils/spinner";
+import { useDetails } from "../hooks/useDetails";
 
 // 1. Captura o ano atual dinamicamente (ex: 2026)
 const anoAtual = new Date().getFullYear();
@@ -222,12 +228,397 @@ export default function BuscaSemanticaActual() {
     }, [periodoEspecifico])
 
     const [itemSelected, setItemSelected] = useState<any | null>(null)
+    const [showInputs, setShowInputs] = useState(false)
+    const [formData, setFormData] = useState({
+        senha: "",
+        email: ""
+    })
+    const { login } = useContext(AuthContext)
+    const [loading, setLoading] = useState(false)
+    const [statusError, setStatusError] = useState(false)
+
+    const userData = localStorage.getItem("user-repo");
+    const details = userData ? JSON.parse(userData) : null
+    const [logoutIsloading, setLogoutIsLoading] = useState(false);
+    const { logout } = useContext(AuthContext)
+
+    const handleLogin = async (e: any) => {
+
+        e.preventDefault()
+        const body = {
+            email: formData?.email,
+            senha: formData?.senha
+        }
+        try {
+
+            setLoading(true)
+
+            await login(body)
+
+            setShowInputs(false)
+
+            setStatusError(false)
+
+        } catch (error) {
+            console.log(error)
+            if (isAxiosError(error)) {
+                setStatusError(false)
+                const status = error?.response?.status
+
+                if (status === 403) return setStatusError(true);
+
+                toast.error("Erro ao entrar, por favor tente novamente", {
+                    icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11.75 1C5.822 1 1 5.823 1 11.75C1 17.677 5.822 22.5 11.75 22.5C17.678 22.5 22.5 17.677 22.5 11.75C22.5 5.823 17.678 1 11.75 1ZM11.75 21C6.649 21 2.5 16.851 2.5 11.75C2.5 6.649 6.649 2.5 11.75 2.5C16.851 2.5 21 6.649 21 11.75C21 16.851 16.851 21 11.75 21ZM15.28 9.28003L12.81 11.75L15.28 14.22C15.573 14.513 15.573 14.988 15.28 15.281C15.134 15.427 14.942 15.501 14.75 15.501C14.558 15.501 14.366 15.428 14.22 15.281L11.75 12.811L9.28 15.281C9.134 15.427 8.942 15.501 8.75 15.501C8.558 15.501 8.366 15.428 8.22 15.281C7.927 14.988 7.927 14.513 8.22 14.22L10.69 11.75L8.22 9.28003C7.927 8.98703 7.927 8.51199 8.22 8.21899C8.513 7.92599 8.98801 7.92599 9.28101 8.21899L11.751 10.689L14.221 8.21899C14.514 7.92599 14.989 7.92599 15.282 8.21899C15.573 8.51199 15.573 8.98803 15.28 9.28003Z" fill="#FF5656" />
+                    </svg>,
+                    style: {
+                        borderLeft: "8px solid #EF4A00", // Tailwind emerald-500
+                    },
+                    duration: 2000
+
+                })
+                setStatusError(false)
+
+            }
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleLogout = async (e: any) => {
+        e.preventDefault()
+
+        setLogoutIsLoading(true)
+        try {
+
+            logout()
+            //toast.success("Sessão terminada com sucesso!")
+
+        } catch (error) {
+            console.log(error)
+        } finally {
+            setLogoutIsLoading(false)
+        }
+    }
 
 
     return (
         <>
+            <Toaster />
             {/* HERO CAROUSEL */}
-            <Carrossel />
+
+            <div className="relative">
+
+
+                
+{details?.usuario?.nome ? (
+    // UTILIZADOR LOGADO
+    <div
+        className="
+            absolute
+            right-4
+            top-4
+            z-50
+            flex
+            items-center
+            gap-2
+            rounded-full
+            border border-white/60
+            bg-black/20
+            px-2
+            py-1.5
+            shadow-lg
+            backdrop-blur-md
+        "
+    >
+        {/* FOTO / INICIAL */}
+        {details?.usuario?.photo ? (
+            <img
+                src={details.usuario.photo}
+                alt={details.usuario.nome}
+                className="h-8 w-8 rounded-full object-cover"
+            />
+        ) : (
+            <div
+                className="
+                    flex
+                    h-8
+                    w-8
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-white/20
+                    text-xs
+                    font-bold
+                    text-white
+                "
+            >
+                {details.usuario.nome.charAt(0).toUpperCase()}
+            </div>
+        )}
+
+        {/* NOME */}
+        <span className="text-sm font-medium text-white">
+            {details.usuario.nome}
+        </span>
+
+        {/* LOGOUT */}
+        <button
+            type="button"
+            onClick={logout}
+            title="Terminar sessão"
+            className="
+                flex
+                h-8
+                w-8
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                text-white/60
+                transition-all
+                hover:bg-red-500/20
+                hover:text-red-400
+                active:scale-95
+            "
+        >
+            <LogOut size={17} strokeWidth={2} />
+        </button>
+    </div>
+) : (
+    // NÃO AUTENTICADO
+   
+<button
+  type="button"
+  onClick={() => setShowInputs(true)}
+  className="
+    absolute right-4 top-4 z-50
+    flex items-center gap-2
+    rounded-full
+    border border-white/20
+    bg-black/40
+    px-3 py-1.5
+    text-sm font-medium text-white
+    shadow-lg
+    backdrop-blur-md
+    transition-all duration-300
+
+    hover:border-white/30
+    hover:bg-white/15
+    hover:shadow-xl
+    hover:-translate-y-0.5
+
+    active:scale-95
+  "
+>
+  <UserRound
+    size={17}
+    strokeWidth={2}
+    className="transition-transform duration-300 group-hover:scale-110"
+  />
+
+  <span>Entrar</span>
+</button>
+
+
+)}
+
+
+
+
+
+
+
+
+                {/* CARD DE LOGIN */}
+                {showInputs && (
+                    <div
+                        className={`
+            absolute right-4 top-16 z-50
+            w-[calc(100vw-2rem)]
+            max-w-[360px]
+            rounded-2xl
+            border
+            ${statusError
+                                ? "border-red-500/80 ring-1 ring-red-500/20"
+                                : "border-white/20"
+                            }
+            bg-black/40
+            p-5
+            shadow-2xl
+            backdrop-blur-xl
+            animate-in fade-in slide-in-from-top-2
+            duration-200
+        `}
+                    >
+                        {/* CABEÇALHO */}
+                        <div className="mb-5">
+                            <h2 className="text-lg font-bold text-white">
+                                Bem-vindo ao Repositório
+                            </h2>
+
+                            <p className="mt-1 text-xs leading-relaxed text-white/60">
+                                Entre para acessar gerenciar seus trabalhos académicos.
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleLogin} className="space-y-2">
+
+                            {/* EMAIL */}
+                            <div className="space-y-1.5">
+                                <label
+                                    htmlFor="email"
+                                    className="text-xs font-medium text-white/80"
+                                >
+                                    Email
+                                </label>
+
+                                <div className="relative">
+                                    <input
+                                        onSelect={() => setStatusError(false)}
+                                        id="email"
+                                        required
+                                        type="email"
+                                        placeholder="seuemail@exemplo.com"
+                                        value={formData.email}
+                                        onChange={(e) => {
+                                            setFormData({
+                                                ...formData,
+                                                email: e.target.value,
+                                            });
+
+                                            // remove o erro ao começar a corrigir
+                                            if (statusError) setStatusError(false);
+                                        }}
+                                        className={`
+                            w-full
+                            h-11
+                            rounded
+                            border
+                            ${statusError
+                                                ? "border-red-500/70 focus:border-red-500"
+                                                : "border-white/10 focus:border-white/40"
+                                            }
+                            bg-white/10
+                            px-4
+                            text-sm
+                            text-white
+                            outline-none
+                            placeholder:text-white/40
+                            transition-all
+                            focus:bg-white/15
+                            focus:ring-2
+                            ${statusError
+                                                ? "focus:ring-red-500/20"
+                                                : "focus:ring-white/10"
+                                            }
+                        `}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* SENHA */}
+                            <div className="space-y-1.5">
+                                <label
+                                    htmlFor="senha"
+                                    className="text-xs font-medium text-white/80"
+                                >
+                                    Palavra-passe
+                                </label>
+
+                                <input
+                                    onSelect={() => setStatusError(false)}
+                                    id="senha"
+                                    required
+                                    type="password"
+                                    placeholder="Digite a sua palavra-passe"
+                                    value={formData.senha}
+                                    onChange={(e) => {
+                                        setFormData({
+                                            ...formData,
+                                            senha: e.target.value,
+                                        });
+
+                                        // remove o erro ao começar a corrigir
+                                        if (statusError) setStatusError(false);
+                                    }}
+                                    className={`
+                        w-full
+                        h-11
+                        rounded
+                        border
+                        ${statusError
+                                            ? "border-red-500/70 focus:border-red-500"
+                                            : "border-white/10 focus:border-white/40"
+                                        }
+                        bg-white/10
+                        px-4
+                        text-sm
+                        text-white
+                        outline-none
+                        placeholder:text-white/40
+                        transition-all
+                        focus:bg-white/15
+                        focus:ring-2
+                        ${statusError
+                                            ? "focus:ring-red-500/20"
+                                            : "focus:ring-white/10"
+                                        }
+                    `}
+                                />
+                            </div>
+                            {statusError && <p className="w-full text-end text-sm text-red-500">Credenciais inválidas</p>}
+
+                            {/* BOTÃO LOGIN */}
+                            <button
+                                disabled={loading}
+                                type="submit"
+                                className="
+                    w-full
+                    h-11
+                    rounded
+                    bg-white
+                    text-sm
+                    font-bold
+                    text-zinc-900
+                    shadow-lg
+                    transition-all duration-200
+                    hover:bg-zinc-100
+                    hover:shadow-xl
+                    active:scale-[0.98]
+                    cursor-pointer
+                    mt-10
+                "
+                            >
+                                {loading ? (
+                                    <div className="w-full flex justify-center">
+                                        <Spinner
+                                            color="#000"
+                                            width="6"
+                                            height="6"
+                                        />
+                                    </div>
+                                ) : (
+                                    "Entrar"
+                                )}
+                            </button>
+                        </form>
+
+                        {/* RODAPÉ */}
+                        <div className="mt-5 border-t border-white/10 pt-4 text-center">
+                            <p className="text-[11px] text-white/40">
+                                Acesso exclusivo para utilizadores registados
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+
+
+                <Carrossel />
+            </div>
+
+
             <div className="relative -mt-20 z-20">
                 <div className="min-h-screen bg-linear-to-b from-[#F8FAFF] to-white text-[#0B1437]">
                     {/* HERO */}
@@ -331,7 +722,7 @@ export default function BuscaSemanticaActual() {
                 bg-white
                 border
                 border-zinc-200
-                rounded-xl
+                rounded
                 overflow-hidden
             ">
 
@@ -526,7 +917,7 @@ export default function BuscaSemanticaActual() {
                     </section>
                     {/* FILTROS */}
                     <section className="max-w-7xl mx-auto px-6 lg:px-10 mt-10">
-                        <div className="bg-white border border-zinc-200 rounded-xl">
+                        <div className="bg-white border border-zinc-200 rounded">
 
                             {/* BUSCA SEMÂNTICA */}
                             <div className="p-6">
@@ -1080,7 +1471,7 @@ export default function BuscaSemanticaActual() {
                             <DetalhesTrabalho
                                 trabalho={itemSelected}
                                 onVoltar={() => setItemSelected(null)}
-                                
+
                             />
 
                         ) : isLoading || isRefetching ? (
@@ -1093,7 +1484,8 @@ export default function BuscaSemanticaActual() {
                                     {/* CABEÇALHO DOS RESULTADOS */}
                                     <div className="mb-6">
 
-                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end
+                                         sm:justify-between">
 
                                             {/* INFORMAÇÕES DA PESQUISA */}
                                             <div>
@@ -1169,14 +1561,14 @@ export default function BuscaSemanticaActual() {
                                             <article
                                                 key={item.id}
                                                 className="
-                            group
-                            relative
-                            py-6
-                            border-b
-                            border-zinc-200
-                            transition-colors
-                            hover:bg-zinc-50/70
-                        "
+                                                group
+                                                relative
+                                                py-6
+                                                border-b
+                                                border-zinc-200
+                                                transition-colors
+                                                hover:bg-zinc-50/70
+                                            "
                                             >
 
                                                 <div className="flex gap-4">
@@ -1185,13 +1577,13 @@ export default function BuscaSemanticaActual() {
 
                                                     <div
                                                         className="
-                                    hidden
-                                    sm:flex
-                                    shrink-0
-                                    w-8
-                                    pt-1
-                                    justify-center
-                                "
+                                                        hidden
+                                                        sm:flex
+                                                        shrink-0
+                                                        w-8
+                                                        pt-1
+                                                        justify-center
+                                                    "
                                                     >
                                                         <span className="text-xs font-medium text-zinc-400">
                                                             {String(index + 1).padStart(2, "0")}
@@ -1212,14 +1604,14 @@ export default function BuscaSemanticaActual() {
                                                                 <h3
                                                                     title={item?.titulo}
                                                                     className="
-                                                text-[17px]
-                                                font-semibold
-                                                leading-6
-                                                text-[#1B4F9C]
-                                                hover:text-[#141B59]
-                                                hover:underline
-                                                cursor-pointer
-                                            "
+                                                                    text-[17px]
+                                                                    font-semibold
+                                                                    leading-6
+                                                                    text-[#1B4F9C]
+                                                                    hover:text-[#141B59]
+                                                                    hover:underline
+                                                                    cursor-pointer
+                                                                "
                                                                 >
                                                                     {item.titulo}
                                                                 </h3>
@@ -1863,7 +2255,7 @@ export default function BuscaSemanticaActual() {
         border
         border-zinc-200
         bg-[#F8FAFF]
-        rounded-xl
+        rounded
         overflow-hidden
         relative
     ">

@@ -9,7 +9,7 @@ import { useDetails } from "../hooks/useDetails";
 export default function Header() {
 
     const [logoutIsloading, setLogoutIsLoading] = useState(false);
-    const { logout, user } = useContext(AuthContext)
+    const { logout } = useContext(AuthContext)
 
     const {data: details} = useDetails();
 

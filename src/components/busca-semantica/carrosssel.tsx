@@ -149,15 +149,7 @@ useEffect(() => {
                                         {slide.subtitle}
                                     </p>
 
-                                    <div className="mt-10 flex flex-col sm:flex-row gap-4">
-                                        <button className="bg-[#FC9500] hover:opacity-90 transition rounded-2xl px-8 py-4 text-white font-semibold shadow-2xl shadow-[#FC9500]/30">
-                                            Explorar Trabalhos
-                                        </button>
-
-                                        <button className="bg-white/10 backdrop-blur-md border border-white/20 hover:bg-white/20 transition rounded-2xl px-8 py-4 font-semibold text-white">
-                                            Pesquisa Semântica
-                                        </button>
-                                    </div>
+                                    
                                 </div>
                             </div>
                         </div>
