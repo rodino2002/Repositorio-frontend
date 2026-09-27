@@ -53,7 +53,7 @@ const MenuItems: MenuItem[] = [
     title: "Trabalhos",
     url: "/trabalhos",
     icon: TrabalhoIcon,
-    roles: ["estudante", "admin", "avaliador"],
+    roles: ["estudante", "admin", "avaliador", "professor"],
   },
   {
     title: "Gestão de Contas",

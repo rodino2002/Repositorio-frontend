@@ -41,12 +41,12 @@ export default function Dashboard() {
   );
 
   const nome = user?.usuario?.nome ?? "Utilizador";
-
+  const role = user?.usuario?.role;
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats"],
 
     queryFn: async () => {
-      const response = await api.get("/dashboard/cards");
+      const response = await api.get(role!== "ESTUDANTE"? "/dashboard/cards": "/dashboard/estudante");
 
       return response.data.dados;
     },
@@ -67,7 +67,7 @@ export default function Dashboard() {
       </div>
 
       {/* CARDS */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
 
         <StatCard
           label="Total de trabalhos"
@@ -93,17 +93,17 @@ export default function Dashboard() {
           icon={<CheckCircle2 className="h-5 w-5" />}
         />
 
-        <StatCard
+        {/* <StatCard
           label="Publicados"
           value={isLoading ? 0 : stats?.publicados ?? 0}
           icon={<Globe2 className="h-5 w-5" />}
-        />
+        /> */}
 
-        <StatCard
+        {role !== "ESTUDANTE" && <StatCard
           label="Utilizadores"
           value={isLoading ? 0 : stats?.utilizadores ?? 0}
           icon={<Users className="h-5 w-5" />}
-        />
+        />}
 
       </div>
 

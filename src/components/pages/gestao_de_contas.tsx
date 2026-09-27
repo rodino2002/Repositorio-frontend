@@ -49,45 +49,60 @@ export default function GestaoContas() {
     const [itemSelected, setItemSelected] = useState() as any
     const [modalEliminar, setModalEliminar] = useState(false)
     const [editUserModal, setEditUserModal] = useState(false)
-    const perPage = 20;
+    const [perPage, setPerPage] = useState(20);
 
     const activeRole = tabs.find((tab) => tab.key === activeTab)?.label;
 
     async function getUsers() {
-        if (activeTab === "BACKOFFICE") {
-            const [avaliadoresResponse, adminsResponse] = await Promise.all([
-                api.get("usuarios?role=AVALIADOR"),
-                api.get("usuarios?role=ADMIN"),
-            ]);
+    if (activeTab === "BACKOFFICE") {
+        const [avaliadoresResponse, adminsResponse] = await Promise.all([
+            api.get("usuarios", {
+                params: {
+                    role: "AVALIADOR",
+                    page: currentPage,
+                    per_page: perPage,
+                },
+            }),
+            api.get("usuarios", {
+                params: {
+                    role: "ADMIN",
+                    page: currentPage,
+                    per_page: perPage,
+                },
+            }),
+        ]);
 
-            return {
-                ...avaliadoresResponse.data,
-                dados: [
-                    ...(avaliadoresResponse.data?.dados ?? []),
-                    ...(adminsResponse.data?.dados ?? []),
-                ],
-            };
-        }
-
-        const url = activeRole
-            ? `usuarios?role=${activeRole === "TODOS" ? "" : activeRole}`
-            : "usuarios";
-
-        const { data } = await api.get(url);
-
-        return data;
+        return {
+            ...avaliadoresResponse.data,
+            dados: [
+                ...(avaliadoresResponse.data?.dados ?? []),
+                ...(adminsResponse.data?.dados ?? []),
+            ],
+        };
     }
 
+    const { data } = await api.get("usuarios", {
+        params: {
+            role: activeRole === "TODOS" ? undefined : activeRole,
+            page: currentPage,
+            per_page: perPage,
+        },
+    });
+
+    return data;
+}
     const {
         data,
         isLoading,
         isFetching,
     } = useQuery({
-        queryKey: ["gestaoContas", activeTab],
+        queryKey: ["gestaoContas", activeTab, currentPage, perPage],
         queryFn: getUsers,
     });
 
     const users = data?.dados ?? [];
+
+    
 
     const normalizedSearch = useMemo(
         () => searchInput.trim().toLowerCase(),
@@ -97,7 +112,7 @@ export default function GestaoContas() {
     const filteredUsers = useMemo(() => {
         if (!normalizedSearch) return users;
 
-        return users.filter((item: any) => {
+        return users?.filter((item: any) => {
             const fields = [
                 item?.nome,
                 item?.email,
@@ -115,15 +130,9 @@ export default function GestaoContas() {
         });
     }, [users, normalizedSearch]);
 
-    const totalPages = Math.max(
-        1,
-        Math.ceil(filteredUsers.length / perPage)
-    );
-
-    const paginatedUsers = useMemo(() => {
-        const start = (currentPage - 1) * perPage;
-        return filteredUsers.slice(start, start + perPage);
-    }, [filteredUsers, currentPage]);
+    
+    
+   
 
     const handleTabChange = (tab: AccountTab) => {
         setActiveTab(tab);
@@ -141,31 +150,6 @@ export default function GestaoContas() {
         setCurrentPage(1);
     };
 
-    const handlePrevPage = () => {
-        if (currentPage > 1) {
-            setCurrentPage((prev) => prev - 1);
-        }
-    };
-
-    const handleNextPage = () => {
-        if (currentPage < totalPages) {
-            setCurrentPage((prev) => prev + 1);
-        }
-    };
-
-    const getCreateRole = (): Role => {
-        switch (activeTab) {
-            case "PROFESSOR":
-                return "Professor";
-
-            case "BACKOFFICE":
-                return "Avaliador";
-
-            case "ESTUDANTE":
-            default:
-                return "Estudante";
-        }
-    };
 
     const getRoleLabel = (role?: string) => {
         switch (role) {
@@ -182,6 +166,55 @@ export default function GestaoContas() {
                 return role ?? "N/A";
         }
     };
+
+    const totalPages = Math.max(
+        1,
+        data?.paginacao?.totalPaginas ??
+        1
+    );
+
+    const hasPrevPage = currentPage > 1;
+    const hasNextPage = currentPage < totalPages;
+
+    const handlePerPageChange = (value: number) => {
+        setPerPage(value);
+        setCurrentPage(1);
+    };
+
+    const handlePrevPage = () => {
+        if (hasPrevPage) setCurrentPage((prev) => prev - 1);
+    };
+
+    const handleNextPage = () => {
+        if (hasNextPage) setCurrentPage((prev) => prev + 1);
+    };
+
+    const renderPagination = () => (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 border-t border-[#EDEFF6] text-sm text-[#707EAE]">
+            <div className="flex items-center gap-2">
+                <span>Mostrar</span>
+                <select value={perPage} onChange={(e) => handlePerPageChange(Number(e.target.value))} className="h-9 rounded-lg border border-[#D4D9EA] bg-white px-2 text-sm text-[#465A9D] focus:outline-none focus:ring-1 focus:ring-[#FFC505]">
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                </select>
+                <span>por página</span>
+            </div>
+
+            <div className="flex items-center justify-between sm:justify-end gap-4">
+                <span className="text-xs sm:text-sm">Página {currentPage} de {totalPages}</span>
+                <div className="flex items-center gap-2">
+                    <button type="button" onClick={handlePrevPage} disabled={!hasPrevPage} className="h-9 w-9 flex items-center justify-center rounded-lg border border-[#D4D9EA] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#F5F6FA]">
+                        <svg width="8" height="15" viewBox="0 0 11 18" fill="none"><path fillRule="evenodd" clipRule="evenodd" d="M9.98901 0.363471C10.4234 0.826821 10.3999 1.55458 9.93658 1.98897L2.83148 8.65L9.93658 15.311C10.3999 15.7454 10.4234 16.4732 9.98901 16.9365C9.55462 17.3999 8.82686 17.4234 8.36351 16.989L0.363513 9.48897C0.131615 9.27157 4.49296e-05 8.96787 4.49258e-05 8.65C4.49221e-05 8.33213 0.131615 8.02844 0.363513 7.81104L8.36351 0.311036C8.82686 -0.123354 9.55462 -0.0998777 9.98901 0.363471Z" fill="currentColor" /></svg>
+                    </button>
+                    <button type="button" onClick={handleNextPage} disabled={!hasNextPage} className="h-9 w-9 flex items-center justify-center rounded-lg border border-[#D4D9EA] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[#F5F6FA]">
+                        <svg width="8" height="15" viewBox="0 0 11 18" fill="none"><path fillRule="evenodd" clipRule="evenodd" d="M0.311036 16.9366C-0.123354 16.4734 -0.0998778 15.7456 0.363471 15.3111L7.46857 8.65005L0.363471 1.98901C-0.0998784 1.55462 -0.123355 0.826862 0.311035 0.363512C0.745425 -0.0998383 1.47319 -0.123314 1.93654 0.311077L9.93654 7.81108C10.1684 8.02848 10.3 8.33217 10.3 8.65004C10.3 8.96792 10.1684 9.27161 9.93654 9.48901L1.93654 16.989C1.47319 17.4234 0.745426 17.3999 0.311036 16.9366Z" fill="currentColor" /></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
 
     return (
         <>
@@ -312,70 +345,7 @@ export default function GestaoContas() {
                 {/* Tabela */}
                 <div className="mt-6 ring-[2px] ring-[#D4D9EA] rounded-lg relative overflow-x-auto">
                     {/* Paginação */}
-                    <div className="flex justify-between items-center text-[#707EAE] p-4">
-                        <p className="text-xs sm:text-sm">
-                            {filteredUsers.length > 0
-                                ? `${(currentPage - 1) * perPage + 1}-${Math.min(
-                                    currentPage * perPage,
-                                    filteredUsers.length
-                                )} de ${filteredUsers.length}`
-                                : "0 resultados"}
-                        </p>
-
-                        <div className="flex space-x-4 items-center">
-                            <button
-                                onClick={handlePrevPage}
-                                disabled={currentPage === 1}
-                                className={`${currentPage === 1
-                                    ? "text-[#707EAE] cursor-not-allowed"
-                                    : "text-[#0B1437] cursor-pointer"
-                                    }`}
-                                aria-label="Página anterior"
-                            >
-                                <svg
-                                    width="8"
-                                    height="15"
-                                    viewBox="0 0 11 18"
-                                    fill="none"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        clipRule="evenodd"
-                                        d="M9.98901 0.363471C10.4234 0.826821 10.3999 1.55458 9.93658 1.98897L2.83148 8.65L9.93658 15.311C10.3999 15.7454 10.4234 16.4732 9.98901 16.9365C9.55462 17.3999 8.82686 17.4234 8.36351 16.989L0.363513 9.48897C0.131615 9.27157 4.49296e-05 8.96787 4.49258e-05 8.65C4.49221e-05 8.33213 0.131615 8.02844 0.363513 7.81104L8.36351 0.311036C8.82686 -0.123354 9.55462 -0.0998777 9.98901 0.363471Z"
-                                        fill="currentColor"
-                                    />
-                                </svg>
-                            </button>
-
-                            <span className="text-xs text-[#707EAE]">
-                                Página {currentPage} de {totalPages}
-                            </span>
-
-                            <button
-                                onClick={handleNextPage}
-                                disabled={currentPage >= totalPages}
-                                className={`${currentPage >= totalPages
-                                    ? "text-[#707EAE] cursor-not-allowed"
-                                    : "text-[#0B1437] cursor-pointer"
-                                    }`}
-                                aria-label="Próxima página"
-                            >
-                                <svg
-                                    width="8"
-                                    height="15"
-                                    viewBox="0 0 11 18"
-                                    fill="none"
-                                >
-                                    <path
-                                        fillRule="evenodd"
-                                        clipRule="evenodd"
-                                        d="M0.311036 16.9366C-0.123354 16.4732 -0.0998778 15.7455 0.363471 15.3111L7.46857 8.65005L0.363471 1.98901C-0.0998784 1.55462 -0.123355 0.826862 0.311035 0.363512C0.745425 -0.0998383 1.47319 -0.123314 1.93654 0.311077L9.93654 7.81108C10.1684 8.02848 10.3 8.33217 10.3 8.65004C10.3 8.96792 10.1684 9.27161 9.93654 9.48901L1.93654 16.989C1.47319 17.4234 0.745426 17.3999 0.311036 16.9366Z"
-                                        fill="currentColor"
-                                    />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
+                    {renderPagination()}
 
                     <table className="w-full md:table-fixed border-collapse min-w-[760px]">
                         <thead className="h-10 ring-1 ring-[#EDEFF6]">
@@ -414,8 +384,8 @@ export default function GestaoContas() {
                                         </div>
                                     </td>
                                 </tr>
-                            ) : paginatedUsers.length > 0 ? (
-                                paginatedUsers.map((item: any) => (
+                            ) : filteredUsers?.length > 0 ? (
+                                filteredUsers?.map((item: any) => (
                                     <tr
                                         key={item?.id}
                                         className="border-t border-[#EBECEF] hover:bg-[#F5F6FA] duration-300 text-[#143163]"
@@ -453,8 +423,8 @@ export default function GestaoContas() {
                                                     type="button"
                                                     title="Ver detalhes"
                                                     onClick={() => {
-                                                       setDetailsDepartamentModal(true)
-                                                       setItemSelected(item);
+                                                        setDetailsDepartamentModal(true)
+                                                        setItemSelected(item);
                                                     }}
                                                     className="hover:bg-[#07F] hover:text-white bg-[#EDF5FF] text-[#0077FF] duration-150 p-2 rounded-lg cursor-pointer"
                                                 >
@@ -475,7 +445,7 @@ export default function GestaoContas() {
                                                 <button
                                                     type="button"
                                                     title="Editar"
-                                                    onClick={() => {setEditUserModal(true), setItemSelected(item)}}
+                                                    onClick={() => { setEditUserModal(true), setItemSelected(item) }}
                                                     className="hover:bg-[#009F5E] hover:text-white bg-[#E6FFF4] text-[#009F5E] duration-150 p-2 rounded-lg cursor-pointer"
                                                 >
                                                     <svg
@@ -531,6 +501,7 @@ export default function GestaoContas() {
                                             </div>
                                         </td>
                                     </tr>
+
                                 ))
                             ) : (
                                 <tr>
@@ -545,6 +516,7 @@ export default function GestaoContas() {
                                 </tr>
                             )}
                         </tbody>
+                        
                     </table>
                 </div>
             </div>

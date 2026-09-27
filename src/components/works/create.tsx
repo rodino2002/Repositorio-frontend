@@ -103,7 +103,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
                 fileUrl: urlFile ?? "",
                 departamentoId: Number(formData.departamentoId),
                 especialidadesIds: arrayEspecialidades,
-                tipoTrabalhoId: formData.tipo
+                tipoTrabalhoId: Number(formData.tipo)
             }
 
             await api.post(`trabalhos`, body)
