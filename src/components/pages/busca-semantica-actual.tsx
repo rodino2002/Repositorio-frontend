@@ -1,0 +1,2372 @@
+import { useQuery } from "@tanstack/react-query";
+import { api } from "../config/api";
+import { capitalize } from "../helpers/capitalize";
+import { downloadFunction } from "../utils/downloadTCC";
+import { useContext, useEffect, useState } from "react";
+import {
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+} from "@/components/ui/dialog"
+import { useDepartaments } from "../hooks/useDepartaments";
+import { useEspecialities } from "../hooks/useEspecialities";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select"
+import Carrossel from "../busca-semantica/carrosssel";
+import { useTipoTrabalhos } from "../hooks/useTipoTrabalho";
+import { ResultsSkeleton } from "../utils/trabalhosSkeletom";
+import DetalhesTrabalho from "../detlhesTrabalho/detalhes";
+import { LogOut, UserRound } from "lucide-react";
+import { AuthContext } from "@/Context/auth.context";
+import { isAxiosError } from "axios";
+import { toast, Toaster } from "sonner";
+import { Spinner } from "../utils/spinner";
+
+// 1. Captura o ano atual dinamicamente (ex: 2026)
+const anoAtual = new Date().getFullYear();
+
+// 2. Cria um array com os últimos 5 anos: [2026, 2025, 2024, 2023, 2022]
+const listaAnos = Array.from({ length: 3 }, (_, index) => String(anoAtual - index));
+
+function formatarInicioAno(ano?: string | null) {
+    if (!ano) return "";
+    return `${ano}-01-01`;
+}
+
+function formatarFimAno(ano?: string | null) {
+    if (!ano) return "";
+    return `${ano}-12-31`;
+}
+export default function BuscaSemanticaActual() {
+
+    const [previewOpen, setPreviewOpen] = useState(false)
+    const [selectedFile, setSelectedFile] = useState("")
+    const [departamentoId, setDepartamentoId] = useState("")
+    const [especialidadeId, setEspecialidadeId] = useState("")
+    const [tipoTrabalhoId, setTipoTrabalhoId] = useState("")
+    const [searchTerm, setSearchTerm] = useState("")
+    const [periodoEspecifico, setPeriodoEspecifico] = useState<{ inicio: string; fim: string } | null>(null);
+    const [isEspeficoPeriodo, setIsEspecificoPeriodo] = useState(false)
+    const [isFiltered, setIsFiltered] = useState(false)
+    const [showManualFilters, setShowManualFilters] = useState(false);
+
+    type Filters = {
+        departamentoId: string;
+        especialidadeId: string;
+        searchTerm: string;
+        tipoTrabalhoId: string;
+        ano: string;
+        periodoEspecifico: { inicio: string; fim: string } | null;
+    }
+
+    const [filters, setFilters] = useState<Filters>({
+        departamentoId: "",
+        especialidadeId: "",
+        searchTerm: "",
+        tipoTrabalhoId: "",
+        ano: String(anoAtual),
+        periodoEspecifico: null,
+    })
+
+    const departaments = useDepartaments()
+    const especialities = useEspecialities()
+    const tipoTrabalhos = useTipoTrabalhos()
+
+    const especialitiesFiltered = especialities?.filter((item: any) => item?.departamento?.id === Number(departamentoId))
+
+    function normalizeWorksResponse(data: any) {
+        const isSemantic = Array.isArray(data?.resultados)
+
+        const items = isSemantic
+            ? data.resultados
+            : data?.dados || []
+
+        const recomendados = isSemantic
+            ? data?.trabalhosRecomendados || []
+            : []
+
+        const normalizeItem = (item: any) => ({
+            id: item.id,
+            titulo: item.titulo,
+            resumo: item.resumo,
+            fileUrl: item.fileUrl,
+            status: item.status,
+            createdAt: item.createdAt,
+
+            autor: item.autor,
+            departamento: item.departamento,
+            especialidades: item.especialidades,
+            tipoTrabalho: item.tipoTrabalho,
+
+            score: item.score ?? item.similarity ?? null,
+
+            semanticScore: item.semanticScore ?? null,
+            recommendationScore: item.recommendationScore ?? null,
+        })
+
+        return {
+            totalEncontrados: isSemantic
+                ? data?.totalEncontrados ?? items.length
+                : data?.paginacao?.totalItems ?? items.length,
+
+            query: isSemantic
+                ? data?.query ?? ""
+                : "",
+
+            items: items.map(normalizeItem),
+
+            trabalhosRecomendados: recomendados.map(normalizeItem),
+        }
+    }
+
+    async function getWorks() {
+        try {
+            if (filters.searchTerm.trim()) {
+                const { data } = await api.post(
+                    "semantic/buscar-inteligente",
+                    { query: filters.searchTerm }
+                )
+
+                return normalizeWorksResponse(data)
+            }
+
+            // Definindo os filtros de ano baseados na lógica do seu formulário
+            const anoInicio = isEspeficoPeriodo
+                ? filters.periodoEspecifico?.inicio
+                : formatarInicioAno(filters.ano)
+
+            const anoFim = isEspeficoPeriodo
+                ? filters.periodoEspecifico?.fim || ""
+                : "";
+
+            const url = `trabalhos?status=APROVADO&departamentoId=${filters.departamentoId === "todos" ? "" : filters.departamentoId || ""
+                }&especialidadeId=${filters.especialidadeId === "todas" ? "" : filters.especialidadeId || ""
+                }&tipoTrabalhoId=${filters.tipoTrabalhoId === "todos" ? "" : filters.tipoTrabalhoId || ""
+                }&start_date=${anoInicio || ""}&end_date=${anoFim || ""}`;
+
+            const { data } = await api.get(url)
+
+            return normalizeWorksResponse(data)
+        } catch (error) {
+            console.error(error)
+        }
+    }
+
+    const { data, isLoading, isRefetching } = useQuery({
+        queryKey: [
+            "trabalhosSemanticaList",
+            filters,
+        ],
+        queryFn: getWorks,
+    })
+
+
+
+    const handleFilter = (newYear?: string) => {
+        const year = newYear || ""
+        setFilters({
+            departamentoId,
+            especialidadeId,
+            searchTerm,
+            tipoTrabalhoId,
+            ano: year,
+            periodoEspecifico: periodoEspecifico
+                ? {
+                    inicio: formatarInicioAno(periodoEspecifico.inicio),
+                    fim: formatarFimAno(periodoEspecifico.fim)
+                }
+                : null,
+        })
+    }
+
+    const handlePreview = (fileUrl: string) => {
+        setSelectedFile(fileUrl)
+        setPreviewOpen(true)
+    }
+
+    const limparFiltros = () => {
+        setDepartamentoId("")
+        setEspecialidadeId("")
+        setTipoTrabalhoId("")
+        setSearchTerm("")
+        setPeriodoEspecifico(null)
+        setIsEspecificoPeriodo(false)
+        setFilters({
+            ...filters,
+            departamentoId: "",
+            especialidadeId: "",
+            searchTerm: "",
+            tipoTrabalhoId: "",
+            ano: String(anoAtual),
+            periodoEspecifico: null,
+        })
+    }
+
+    useEffect(() => {
+        if (filters.searchTerm || filters.departamentoId ||
+            filters.especialidadeId || filters.tipoTrabalhoId
+            || filters.ano || filters.periodoEspecifico) {
+            setIsFiltered(true)
+        } else {
+            setIsFiltered(false)
+        }
+    }, [filters])
+
+    useEffect(() => {
+        if (periodoEspecifico?.fim || periodoEspecifico?.inicio) {
+            setFilters({
+                ...filters,
+                ano: String(anoAtual),
+            })
+        } else {
+            setFilters({
+                ...filters,
+                ano: String(anoAtual),
+            })
+        }
+    }, [periodoEspecifico])
+
+    const [itemSelected, setItemSelected] = useState<any | null>(null)
+    const [showInputs, setShowInputs] = useState(false)
+    const [formData, setFormData] = useState({
+        senha: "",
+        email: ""
+    })
+    const { login } = useContext(AuthContext)
+    const [loading, setLoading] = useState(false)
+    const [statusError, setStatusError] = useState(false)
+
+    const userData = localStorage.getItem("user-repo");
+    const details = userData ? JSON.parse(userData) : null
+    const { logout } = useContext(AuthContext)
+
+    const handleLogin = async (e: any) => {
+
+        e.preventDefault()
+        const body = {
+            email: formData?.email,
+            senha: formData?.senha
+        }
+        try {
+
+            setLoading(true)
+
+            await login(body)
+
+            setShowInputs(false)
+
+            setStatusError(false)
+
+        } catch (error) {
+            console.log(error)
+            if (isAxiosError(error)) {
+                setStatusError(false)
+                const status = error?.response?.status
+
+                if (status === 403) return setStatusError(true);
+
+                toast.error("Erro ao entrar, por favor tente novamente", {
+                    icon: <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M11.75 1C5.822 1 1 5.823 1 11.75C1 17.677 5.822 22.5 11.75 22.5C17.678 22.5 22.5 17.677 22.5 11.75C22.5 5.823 17.678 1 11.75 1ZM11.75 21C6.649 21 2.5 16.851 2.5 11.75C2.5 6.649 6.649 2.5 11.75 2.5C16.851 2.5 21 6.649 21 11.75C21 16.851 16.851 21 11.75 21ZM15.28 9.28003L12.81 11.75L15.28 14.22C15.573 14.513 15.573 14.988 15.28 15.281C15.134 15.427 14.942 15.501 14.75 15.501C14.558 15.501 14.366 15.428 14.22 15.281L11.75 12.811L9.28 15.281C9.134 15.427 8.942 15.501 8.75 15.501C8.558 15.501 8.366 15.428 8.22 15.281C7.927 14.988 7.927 14.513 8.22 14.22L10.69 11.75L8.22 9.28003C7.927 8.98703 7.927 8.51199 8.22 8.21899C8.513 7.92599 8.98801 7.92599 9.28101 8.21899L11.751 10.689L14.221 8.21899C14.514 7.92599 14.989 7.92599 15.282 8.21899C15.573 8.51199 15.573 8.98803 15.28 9.28003Z" fill="#FF5656" />
+                    </svg>,
+                    style: {
+                        borderLeft: "8px solid #EF4A00", // Tailwind emerald-500
+                    },
+                    duration: 2000
+
+                })
+                setStatusError(false)
+
+            }
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    // const handleLogout = async (e: any) => {
+    //     e.preventDefault()
+
+    //     setLogoutIsLoading(true)
+    //     try {
+
+    //         logout()
+    //         //toast.success("Sessão terminada com sucesso!")
+
+    //     } catch (error) {
+    //         console.log(error)
+    //     } finally {
+    //         setLogoutIsLoading(false)
+    //     }
+    // }
+
+
+    return (
+        <>
+            <Toaster />
+            {/* HERO CAROUSEL */}
+
+            <div className="relative">
+
+
+                
+{details?.usuario?.nome ? (
+    // UTILIZADOR LOGADO
+    <div
+        className="
+            absolute
+            right-4
+            top-4
+            z-50
+            flex
+            items-center
+            gap-2
+            rounded-full
+            border border-white/60
+            bg-black/20
+            px-2
+            py-1.5
+            shadow-lg
+            backdrop-blur-md
+        "
+    >
+        {/* FOTO / INICIAL */}
+        {details?.usuario?.photo ? (
+            <img
+                src={details.usuario.photo}
+                alt={details.usuario.nome}
+                className="h-8 w-8 rounded-full object-cover"
+            />
+        ) : (
+            <div
+                className="
+                    flex
+                    h-8
+                    w-8
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-white/20
+                    text-xs
+                    font-bold
+                    text-white
+                "
+            >
+                {details.usuario.nome.charAt(0).toUpperCase()}
+            </div>
+        )}
+
+        {/* NOME */}
+        <span className="text-sm font-medium text-white">
+            {details.usuario.nome}
+        </span>
+
+        {/* LOGOUT */}
+        <button
+            type="button"
+            onClick={logout}
+            title="Terminar sessão"
+            className="
+                flex
+                h-8
+                w-8
+                shrink-0
+                items-center
+                justify-center
+                rounded-full
+                text-white/60
+                transition-all
+                hover:bg-red-500/20
+                hover:text-red-400
+                active:scale-95
+            "
+        >
+            <LogOut size={17} strokeWidth={2} />
+        </button>
+    </div>
+) : (
+    // NÃO AUTENTICADO
+   
+<button
+  type="button"
+  onClick={() => setShowInputs(true)}
+  className="
+    absolute right-4 top-4 z-50
+    flex items-center gap-2
+    rounded-full
+    border border-white/20
+    bg-black/40
+    px-3 py-1.5
+    text-sm font-medium text-white
+    shadow-lg
+    backdrop-blur-md
+    transition-all duration-300
+
+    hover:border-white/30
+    hover:bg-white/15
+    hover:shadow-xl
+    hover:-translate-y-0.5
+
+    active:scale-95
+  "
+>
+  <UserRound
+    size={17}
+    strokeWidth={2}
+    className="transition-transform duration-300 group-hover:scale-110"
+  />
+
+  <span>Entrar</span>
+</button>
+
+
+)}
+
+
+
+
+
+
+
+
+                {/* CARD DE LOGIN */}
+                {showInputs && (
+                    <div
+                        className={`
+            absolute right-4 top-16 z-50
+            w-[calc(100vw-2rem)]
+            max-w-[360px]
+            rounded-2xl
+            border
+            ${statusError
+                                ? "border-red-500/80 ring-1 ring-red-500/20"
+                                : "border-white/20"
+                            }
+            bg-black/40
+            p-5
+            shadow-2xl
+            backdrop-blur-xl
+            animate-in fade-in slide-in-from-top-2
+            duration-200
+        `}
+                    >
+                        {/* CABEÇALHO */}
+                        <div className="mb-5">
+                            <h2 className="text-lg font-bold text-white">
+                                Bem-vindo ao Repositório
+                            </h2>
+
+                            <p className="mt-1 text-xs leading-relaxed text-white/60">
+                                Entre para acessar gerenciar seus trabalhos académicos.
+                            </p>
+                        </div>
+
+                        <form onSubmit={handleLogin} className="space-y-2">
+
+                            {/* EMAIL */}
+                            <div className="space-y-1.5">
+                                <label
+                                    htmlFor="email"
+                                    className="text-xs font-medium text-white/80"
+                                >
+                                    Email
+                                </label>
+
+                                <div className="relative">
+                                    <input
+                                        onSelect={() => setStatusError(false)}
+                                        id="email"
+                                        required
+                                        type="email"
+                                        placeholder="seuemail@exemplo.com"
+                                        value={formData.email}
+                                        onChange={(e) => {
+                                            setFormData({
+                                                ...formData,
+                                                email: e.target.value,
+                                            });
+
+                                            // remove o erro ao começar a corrigir
+                                            if (statusError) setStatusError(false);
+                                        }}
+                                        className={`
+                            w-full
+                            h-11
+                            rounded
+                            border
+                            ${statusError
+                                                ? "border-red-500/70 focus:border-red-500"
+                                                : "border-white/10 focus:border-white/40"
+                                            }
+                            bg-white/10
+                            px-4
+                            text-sm
+                            text-white
+                            outline-none
+                            placeholder:text-white/40
+                            transition-all
+                            focus:bg-white/15
+                            focus:ring-2
+                            ${statusError
+                                                ? "focus:ring-red-500/20"
+                                                : "focus:ring-white/10"
+                                            }
+                        `}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* SENHA */}
+                            <div className="space-y-1.5">
+                                <label
+                                    htmlFor="senha"
+                                    className="text-xs font-medium text-white/80"
+                                >
+                                    Palavra-passe
+                                </label>
+
+                                <input
+                                    onSelect={() => setStatusError(false)}
+                                    id="senha"
+                                    required
+                                    type="password"
+                                    placeholder="Digite a sua palavra-passe"
+                                    value={formData.senha}
+                                    onChange={(e) => {
+                                        setFormData({
+                                            ...formData,
+                                            senha: e.target.value,
+                                        });
+
+                                        // remove o erro ao começar a corrigir
+                                        if (statusError) setStatusError(false);
+                                    }}
+                                    className={`
+                        w-full
+                        h-11
+                        rounded
+                        border
+                        ${statusError
+                                            ? "border-red-500/70 focus:border-red-500"
+                                            : "border-white/10 focus:border-white/40"
+                                        }
+                        bg-white/10
+                        px-4
+                        text-sm
+                        text-white
+                        outline-none
+                        placeholder:text-white/40
+                        transition-all
+                        focus:bg-white/15
+                        focus:ring-2
+                        ${statusError
+                                            ? "focus:ring-red-500/20"
+                                            : "focus:ring-white/10"
+                                        }
+                    `}
+                                />
+                            </div>
+                            {statusError && <p className="w-full text-end text-sm text-red-500">Credenciais inválidas</p>}
+
+                            {/* BOTÃO LOGIN */}
+                            <button
+                                disabled={loading}
+                                type="submit"
+                                className="
+                    w-full
+                    h-11
+                    rounded
+                    bg-white
+                    text-sm
+                    font-bold
+                    text-zinc-900
+                    shadow-lg
+                    transition-all duration-200
+                    hover:bg-zinc-100
+                    hover:shadow-xl
+                    active:scale-[0.98]
+                    cursor-pointer
+                    mt-10
+                "
+                            >
+                                {loading ? (
+                                    <div className="w-full flex justify-center">
+                                        <Spinner
+                                            color="#000"
+                                            width="6"
+                                            height="6"
+                                        />
+                                    </div>
+                                ) : (
+                                    "Entrar"
+                                )}
+                            </button>
+                        </form>
+
+                        {/* RODAPÉ */}
+                        <div className="mt-5 border-t border-white/10 pt-4 text-center">
+                            <p className="text-[11px] text-white/40">
+                                Acesso exclusivo para utilizadores registados
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+
+
+                <Carrossel />
+            </div>
+
+
+            <div className="relative -mt-20 z-20">
+                <div className="min-h-screen bg-linear-to-b from-[#F8FAFF] to-white text-[#0B1437]">
+                    {/* HERO */}
+                    <section className="relative overflow-hidden bg-[#F8FAFF]">
+                        {/* Elementos decorativos (Mantidos) */}
+                        <div className="absolute top-0 left-0 w-72 h-72 bg-[#FFC505]/20 blur-3xl rounded-full" />
+                        <div className="absolute right-0 top-20 w-80 h-80 bg-[#141B59]/10 blur-3xl rounded-full" />
+
+                        <div className="max-w-7xl mx-auto px-6 lg:px-10 py-16 lg:py-20 relative z-10">
+                            <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-12 lg:gap-20 items-center">
+
+                                {/* COLUNA DE TEXTO */}
+                                <div>
+
+                                    {/* LABEL */}
+                                    <div className="
+                inline-flex
+                items-center
+                gap-2
+                text-xs
+                uppercase
+                tracking-[0.18em]
+                text-[#141B59]
+                font-semibold
+                mb-5
+            ">
+                                        <span className="w-8 h-px bg-[#FC9500]" />
+                                        Repositório Académico
+                                    </div>
+
+                                    {/* TÍTULO */}
+                                    <h1 className="
+                text-4xl
+                md:text-5xl
+                lg:text-[54px]
+                font-bold
+                leading-[1.08]
+                tracking-tight
+                text-[#0B1437]
+                max-w-2xl
+            ">
+                                        Encontre trabalhos científicos
+                                        <span className="block text-[#FC9500]">
+                                            pelo significado.
+                                        </span>
+                                    </h1>
+
+                                    {/* DESCRIÇÃO */}
+                                    <p className="
+                mt-6
+                text-zinc-600
+                text-base
+                md:text-lg
+                leading-8
+                max-w-xl
+            ">
+                                        Pesquise TCCs e outros trabalhos académicos por tema,
+                                        contexto e significado, além das palavras-chave
+                                        utilizadas no documento.
+                                    </p>
+
+                                    {/* PEQUENOS DESTAQUES */}
+                                    <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3">
+
+                                        <div className="flex items-center gap-2 text-sm text-zinc-600">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#FC9500]" />
+                                            Pesquisa semântica
+                                        </div>
+
+                                        <div className="flex items-center gap-2 text-sm text-zinc-600">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#FC9500]" />
+                                            Trabalhos académicos
+                                        </div>
+
+                                        <div className="flex items-center gap-2 text-sm text-zinc-600">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-[#FC9500]" />
+                                            Pesquisa contextual
+                                        </div>
+
+                                    </div>
+                                </div>
+
+
+                                {/* PRÉVIA DO REPOSITÓRIO */}
+                                <div className="relative">
+
+                                    {/* detalhe decorativo discreto */}
+                                    <div className="
+                absolute
+                -top-6
+                -right-6
+                w-24
+                h-24
+                border-t
+                border-r
+                border-[#FC9500]/30
+            " />
+
+                                    <div className="
+                relative
+                bg-white
+                border
+                border-zinc-200
+                rounded
+                overflow-hidden
+            ">
+
+                                        {/* CABEÇALHO DA PRÉVIA */}
+                                        <div className="
+                    px-6
+                    py-5
+                    border-b
+                    border-zinc-200
+                    flex
+                    items-center
+                    justify-between
+                ">
+                                            <div>
+                                                <p className="
+                            text-sm
+                            font-semibold
+                            text-[#0B1437]
+                        ">
+                                                    Pesquisa no repositório
+                                                </p>
+
+                                                <p className="
+                            text-xs
+                            text-zinc-500
+                            mt-1
+                        ">
+                                                    Trabalhos relacionados encontrados
+                                                </p>
+                                            </div>
+
+                                            <div className="
+                        w-9
+                        h-9
+                        rounded-md
+                        bg-[#F4F7FE]
+                        flex
+                        items-center
+                        justify-center
+                    ">
+                                                <svg
+                                                    className="text-[#141B59]"
+                                                    width="19"
+                                                    height="19"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                >
+                                                    <circle cx="11" cy="11" r="8" />
+                                                    <path d="m21 21-4.3-4.3" />
+                                                </svg>
+                                            </div>
+                                        </div>
+
+
+                                        {/* QUERY */}
+                                        <div className="px-6 pt-5">
+
+                                            <p className="
+                        text-[11px]
+                        uppercase
+                        tracking-wider
+                        font-semibold
+                        text-zinc-400
+                        mb-2
+                    ">
+                                                Pesquisa
+                                            </p>
+
+                                            <div className="
+                        border
+                        border-zinc-200
+                        rounded-md
+                        px-4
+                        py-3
+                        text-sm
+                        text-[#141B59]
+                        bg-zinc-50/50
+                    ">
+                                                sistemas inteligentes aplicados à educação
+                                            </div>
+
+                                        </div>
+
+
+                                        {/* RESULTADOS */}
+                                        <div className="px-6 py-5 space-y-0">
+
+                                            {[
+                                                {
+                                                    titulo: "Desenvolvimento de sistema web para gestão escolar",
+                                                    autor: "João Manuel",
+                                                    ano: "2024",
+                                                },
+                                                {
+                                                    titulo: "Aplicação de técnicas de inteligência artificial na educação",
+                                                    autor: "Maria José",
+                                                    ano: "2023",
+                                                },
+                                                {
+                                                    titulo: "Sistema inteligente para apoio à gestão académica",
+                                                    autor: "Carlos António",
+                                                    ano: "2022",
+                                                },
+                                            ].map((item, index) => (
+
+                                                <div
+                                                    key={index}
+                                                    className="
+                                py-4
+                                border-b
+                                border-zinc-100
+                                last:border-b-0
+                            "
+                                                >
+
+                                                    <div className="flex items-start gap-3">
+
+                                                        <span className="
+                                    mt-1
+                                    text-xs
+                                    font-medium
+                                    text-zinc-400
+                                    w-5
+                                    shrink-0
+                                ">
+                                                            {String(index + 1).padStart(2, "0")}
+                                                        </span>
+
+                                                        <div className="min-w-0">
+
+                                                            <p className="
+                                        text-sm
+                                        font-semibold
+                                        leading-5
+                                        text-[#1B4F9C]
+                                    ">
+                                                                {item.titulo}
+                                                            </p>
+
+                                                            <p className="
+                                        mt-1
+                                        text-xs
+                                        text-zinc-500
+                                    ">
+                                                                {item.autor} · {item.ano}
+                                                            </p>
+
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+
+                                            ))}
+
+                                        </div>
+
+
+                                        {/* RODAPÉ */}
+                                        <div className="
+                    px-6
+                    py-4
+                    bg-zinc-50
+                    border-t
+                    border-zinc-100
+                    flex
+                    items-center
+                    justify-between
+                ">
+                                            <span className="text-xs text-zinc-500">
+                                                Resultados relevantes
+                                            </span>
+
+                                            <span className="
+                        text-xs
+                        font-medium
+                        text-[#141B59]
+                    ">
+                                                Ver resultados →
+                                            </span>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+                    {/* FILTROS */}
+                    <section className="max-w-7xl mx-auto px-6 lg:px-10 mt-10">
+                        <div className="bg-white border border-zinc-200 rounded">
+
+                            {/* BUSCA SEMÂNTICA */}
+                            <div className="p-6">
+
+                                <div className="mb-3">
+                                    <h3 className="text-base font-semibold text-[#0B1437]">
+                                        Pesquisar no repositório
+                                    </h3>
+
+                                    <p className="text-sm text-zinc-500 mt-1">
+                                        Pesquise por tema, resumo, contexto ou significado.
+                                    </p>
+                                </div>
+
+                                <div className="relative">
+                                    <input
+                                        onKeyDown={(e) =>
+                                            e.key === "Enter" && handleFilter()
+                                        }
+                                        type="text"
+                                        value={searchTerm}
+                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                        placeholder="Digite os termos da sua pesquisa..."
+                                        className="
+                        w-full
+                        h-12
+                        rounded-md
+                        border
+                        border-zinc-300
+                        bg-white
+                        pl-11
+                        pr-4
+                        text-sm
+                        text-[#0B1437]
+                        outline-none
+                        transition
+                        focus:border-[#141B59]
+                        focus:ring-1
+                        focus:ring-[#141B59]/20
+                    "
+                                    />
+
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        width="19"
+                                        height="19"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        className="
+                        absolute
+                        left-4
+                        top-1/2
+                        -translate-y-1/2
+                        text-zinc-400
+                    "
+                                    >
+                                        <circle cx="11" cy="11" r="8" />
+                                        <path d="m21 21-4.3-4.3" />
+                                    </svg>
+                                </div>
+
+                                {/* BOTÃO FILTROS */}
+                                <div className="mt-5 flex items-center justify-between">
+
+                                    <button
+                                        type="button"
+                                        onClick={() =>
+                                            setShowManualFilters(!showManualFilters)
+                                        }
+                                        className="
+                        inline-flex
+                        items-center
+                        gap-2
+                        text-sm
+                        font-medium
+                        text-[#141B59]
+                        hover:text-[#0B1437]
+                        transition-colors
+                        cursor-pointer
+                    "
+                                    >
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="17"
+                                            height="17"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M4 6h16" />
+                                            <path d="M7 12h10" />
+                                            <path d="M10 18h4" />
+                                        </svg>
+
+                                        {showManualFilters
+                                            ? "Ocultar filtros"
+                                            : "Filtros de pesquisa"}
+
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="15"
+                                            height="15"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            className={`
+                            transition-transform duration-200
+                            ${showManualFilters ? "rotate-180" : ""}
+                        `}
+                                        >
+                                            <path d="m6 9 6 6 6-6" />
+                                        </svg>
+                                    </button>
+
+                                    {isFiltered && (
+                                        <button
+                                            type="button"
+                                            onClick={limparFiltros}
+                                            className="
+                            text-sm
+                            text-zinc-500
+                            hover:text-red-600
+                            transition-colors
+                            cursor-pointer
+                        "
+                                        >
+                                            Limpar filtros
+                                        </button>
+                                    )}
+
+                                </div>
+                            </div>
+
+
+                            {/* FILTROS MANUAIS */}
+                            {showManualFilters && (
+                                <div className="
+                border-t
+                border-zinc-200
+                p-6
+                bg-zinc-50/40
+            ">
+
+                                    <div className="mb-5">
+                                        <h4 className="text-sm font-semibold text-[#0B1437]">
+                                            Filtros
+                                        </h4>
+
+                                        <p className="text-xs text-zinc-500 mt-1">
+                                            Refine os resultados utilizando critérios específicos.
+                                        </p>
+                                    </div>
+
+                                    <div className="
+                    grid
+                    grid-cols-1
+                    sm:grid-cols-2
+                    lg:grid-cols-4
+                    gap-4
+                ">
+
+                                        {/* Departamento */}
+                                        <div>
+                                            <label className="
+                            block
+                            mb-2
+                            text-xs
+                            font-medium
+                            text-zinc-600
+                        ">
+                                                Departamento
+                                            </label>
+
+                                            <Select
+                                                value={departamentoId}
+                                                onValueChange={(v) =>
+                                                    setDepartamentoId(
+                                                        v === "todos" ? "" : v
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    className="
+                                    h-11
+                                    rounded-md
+                                    border-zinc-300
+                                    bg-white
+                                    px-3
+                                    text-sm
+                                    text-[#0B1437]
+                                "
+                                                >
+                                                    <SelectValue placeholder="Todos os departamentos" />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    <SelectItem value="todos">
+                                                        Todos os departamentos
+                                                    </SelectItem>
+
+                                                    {departaments?.map((item: any) => (
+                                                        <SelectItem
+                                                            key={item?.id}
+                                                            value={String(item?.id)}
+                                                        >
+                                                            {item?.nome}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+
+                                        {/* Especialidade */}
+                                        <div>
+                                            <label className="
+                            block
+                            mb-2
+                            text-xs
+                            font-medium
+                            text-zinc-600
+                        ">
+                                                Especialidade
+                                            </label>
+
+                                            <Select
+                                                value={especialidadeId}
+                                                onValueChange={(v) =>
+                                                    setEspecialidadeId(
+                                                        v === "todas" ? "" : v
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    className="
+                                    h-11
+                                    rounded-md
+                                    border-zinc-300
+                                    bg-white
+                                    px-3
+                                    text-sm
+                                    text-[#0B1437]
+                                "
+                                                >
+                                                    <SelectValue placeholder="Todas as especialidades" />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    <SelectItem value="todas">
+                                                        Todas as especialidades
+                                                    </SelectItem>
+
+                                                    {especialitiesFiltered?.map((item: any) => (
+                                                        <SelectItem
+                                                            key={item?.id}
+                                                            value={String(item?.id)}
+                                                        >
+                                                            {item?.nome}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+
+                                        {/* Tipo */}
+                                        <div>
+                                            <label className="
+                            block
+                            mb-2
+                            text-xs
+                            font-medium
+                            text-zinc-600
+                        ">
+                                                Tipo de trabalho
+                                            </label>
+
+                                            <Select
+                                                value={tipoTrabalhoId}
+                                                onValueChange={(v) =>
+                                                    setTipoTrabalhoId(
+                                                        v === "todos" ? "" : v
+                                                    )
+                                                }
+                                            >
+                                                <SelectTrigger
+                                                    className="
+                                    h-11
+                                    rounded-md
+                                    border-zinc-300
+                                    bg-white
+                                    px-3
+                                    text-sm
+                                    text-[#0B1437]
+                                "
+                                                >
+                                                    <SelectValue placeholder="Qualquer tipo" />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    <SelectItem value="todos">
+                                                        Qualquer tipo
+                                                    </SelectItem>
+
+                                                    {tipoTrabalhos?.map((item: any) => (
+                                                        <SelectItem
+                                                            key={item?.id}
+                                                            value={String(item?.id)}
+                                                        >
+                                                            {item?.nome}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+
+                                        {/* Ano */}
+                                        <div>
+                                            <label className="
+                            block
+                            mb-2
+                            text-xs
+                            font-medium
+                            text-zinc-600
+                        ">
+                                                Ano de publicação
+                                            </label>
+
+                                            <Select
+                                                value={
+                                                    filters?.ano
+                                                        ? String(filters.ano)
+                                                        : "todos"
+                                                }
+                                                onValueChange={(v) => {
+                                                    if (v === "todos") {
+                                                        handleFilter("");
+                                                    } else {
+                                                        handleFilter(v);
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger
+                                                    className="
+                                    h-11
+                                    rounded-md
+                                    border-zinc-300
+                                    bg-white
+                                    px-3
+                                    text-sm
+                                    text-[#0B1437]
+                                "
+                                                >
+                                                    <SelectValue placeholder="Todos os anos" />
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    <SelectItem value="todos">
+                                                        Todos os anos
+                                                    </SelectItem>
+
+                                                    {listaAnos?.map((item: string) => (
+                                                        <SelectItem
+                                                            key={item}
+                                                            value={String(item)}
+                                                        >
+                                                            Desde {item}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                    </div>
+
+
+                                    {/* PERÍODO */}
+                                    <div className="mt-5 pt-5 border-t border-zinc-200">
+
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                setIsEspecificoPeriodo(
+                                                    !isEspeficoPeriodo
+                                                )
+                                            }
+                                            className="
+                            text-sm
+                            font-medium
+                            text-[#141B59]
+                            hover:underline
+                            cursor-pointer
+                        "
+                                        >
+                                            {isEspeficoPeriodo
+                                                ? "Ocultar período específico"
+                                                : "Pesquisar por período específico"}
+                                        </button>
+
+                                        {isEspeficoPeriodo && (
+                                            <div className="
+                            flex
+                            flex-wrap
+                            items-end
+                            gap-3
+                            mt-4
+                        ">
+
+                                                <div>
+                                                    <label className="
+                                    block
+                                    mb-2
+                                    text-xs
+                                    text-zinc-500
+                                ">
+                                                        Ano inicial
+                                                    </label>
+
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        placeholder="Ex.: 2020"
+                                                        className="
+                                        w-32
+                                        h-10
+                                        rounded-md
+                                        border
+                                        border-zinc-300
+                                        bg-white
+                                        px-3
+                                        text-sm
+                                        outline-none
+                                        focus:border-[#141B59]
+                                    "
+                                                        value={
+                                                            periodoEspecifico?.inicio ?? ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            setPeriodoEspecifico((prev) => ({
+                                                                ...(prev ?? {
+                                                                    inicio: "",
+                                                                    fim: "",
+                                                                }),
+                                                                inicio: e.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+
+                                                <span className="pb-2 text-zinc-400">
+                                                    até
+                                                </span>
+
+                                                <div>
+                                                    <label className="
+                                    block
+                                    mb-2
+                                    text-xs
+                                    text-zinc-500
+                                ">
+                                                        Ano final
+                                                    </label>
+
+                                                    <input
+                                                        type="text"
+                                                        inputMode="numeric"
+                                                        placeholder="Ex.: 2024"
+                                                        className="
+                                        w-32
+                                        h-10
+                                        rounded-md
+                                        border
+                                        border-zinc-300
+                                        bg-white
+                                        px-3
+                                        text-sm
+                                        outline-none
+                                        focus:border-[#141B59]
+                                    "
+                                                        value={
+                                                            periodoEspecifico?.fim ?? ""
+                                                        }
+                                                        onChange={(e) =>
+                                                            setPeriodoEspecifico((prev) => ({
+                                                                ...(prev ?? {
+                                                                    inicio: "",
+                                                                    fim: "",
+                                                                }),
+                                                                fim: e.target.value,
+                                                            }))
+                                                        }
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+
+
+                                    {/* BOTÃO */}
+                                    <div className="
+                    flex
+                    justify-end
+                    mt-6
+                    pt-5
+                    border-t
+                    border-zinc-200
+                ">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleFilter()}
+                                            className="
+                            h-11
+                            px-7
+                            rounded-md
+                            bg-[#141B59]
+                            hover:bg-[#0B1437]
+                            text-white
+                            text-sm
+                            font-semibold
+                            cursor-pointer
+                            transition-colors
+                        "
+                                        >
+                                            Pesquisar
+                                        </button>
+                                    </div>
+
+                                </div>
+                            )}
+
+                        </div>
+                    </section>
+
+                    {/* RESULTADOS */}
+
+                    <div className="max-w-7xl mx-auto px-6 lg:px-10 mt-10">
+
+                        {itemSelected ? (
+
+                            <DetalhesTrabalho
+                                trabalho={itemSelected}
+                                onVoltar={() => setItemSelected(null)}
+
+                            />
+
+                        ) : isLoading || isRefetching ? (
+                            <ResultsSkeleton />
+                        ) :
+                            data?.items?.length > 0 ? (
+
+                                <div>
+
+                                    {/* CABEÇALHO DOS RESULTADOS */}
+                                    <div className="mb-6">
+
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-end
+                                         sm:justify-between">
+
+                                            {/* INFORMAÇÕES DA PESQUISA */}
+                                            <div>
+                                                <div className="flex items-center gap-2">
+
+                                                    <h2 className="text-lg font-semibold text-[#141B59]">
+                                                        Resultados da pesquisa
+                                                    </h2>
+
+                                                    <span className="inline-flex items-center rounded-full bg-[#141B59]/5 px-2.5 py-1 text-[11px] font-medium text-[#141B59]">
+                                                        Busca inteligente
+                                                    </span>
+
+                                                </div>
+
+                                                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-500">
+
+                                                    <span>
+                                                        {data?.totalEncontrados || data?.items?.length || 0}{" "}
+                                                        {(data?.totalEncontrados || data?.items?.length || 0) === 1
+                                                            ? "trabalho encontrado"
+                                                            : "trabalhos encontrados"}
+                                                    </span>
+
+                                                    <span className="text-zinc-300">•</span>
+
+                                                    <span>
+                                                        Pesquisa semântica
+                                                    </span>
+
+                                                    <span className="text-zinc-300">•</span>
+
+                                                    <span>
+                                                        Ordenados por relevância
+                                                    </span>
+
+                                                </div>
+                                            </div>
+
+                                            {/* QUERY PESQUISADA */}
+                                            {data?.query && (
+                                                <div className="max-w-full sm:max-w-md">
+
+                                                    <p className="text-xs text-zinc-400 mb-1">
+                                                        Pesquisa realizada
+                                                    </p>
+
+                                                    <p
+                                                        title={data.query}
+                                                        className="
+                                    text-sm
+                                    text-zinc-600
+                                    line-clamp-2
+                                "
+                                                    >
+                                                        "{data.query}"
+                                                    </p>
+
+                                                </div>
+                                            )}
+
+                                        </div>
+
+                                    </div>
+
+
+                                    {/* LISTA DE RESULTADOS */}
+
+                                    <div className="border-t border-zinc-200">
+
+                                        {data?.items.map((item: any, index: number) => (
+
+                                            <article
+                                                key={item.id}
+                                                className="
+                                                group
+                                                relative
+                                                py-6
+                                                border-b
+                                                border-zinc-200
+                                                transition-colors
+                                                hover:bg-zinc-50/70
+                                            "
+                                            >
+
+                                                <div className="flex gap-4">
+
+                                                    {/* POSIÇÃO DO RESULTADO */}
+
+                                                    <div
+                                                        className="
+                                                        hidden
+                                                        sm:flex
+                                                        shrink-0
+                                                        w-8
+                                                        pt-1
+                                                        justify-center
+                                                    "
+                                                    >
+                                                        <span className="text-xs font-medium text-zinc-400">
+                                                            {String(index + 1).padStart(2, "0")}
+                                                        </span>
+                                                    </div>
+
+
+                                                    {/* CONTEÚDO */}
+
+                                                    <div className="min-w-0 flex-1">
+
+                                                        {/* TÍTULO + RELEVÂNCIA */}
+
+                                                        <div className="flex items-start justify-between gap-4">
+
+                                                            <div className="min-w-0">
+
+                                                                <h3
+                                                                    title={item?.titulo}
+                                                                    className="
+                                                                    text-[17px]
+                                                                    font-semibold
+                                                                    leading-6
+                                                                    text-[#1B4F9C]
+                                                                    hover:text-[#141B59]
+                                                                    hover:underline
+                                                                    cursor-pointer
+                                                                "
+                                                                >
+                                                                    {item.titulo}
+                                                                </h3>
+
+
+                                                                {/* AUTOR / ANO */}
+
+                                                                <div className="mt-1 flex flex-wrap items-center gap-x-2 text-sm">
+
+                                                                    <span className="text-zinc-600">
+                                                                        {item.autor?.nome || "Autor não informado"}
+                                                                    </span>
+
+                                                                    <span className="text-zinc-400">
+                                                                        ·
+                                                                    </span>
+
+                                                                    <span className="text-zinc-500">
+
+                                                                        {item.createdAt
+                                                                            ? new Date(item.createdAt).getFullYear()
+                                                                            : "Ano não informado"}
+
+                                                                    </span>
+
+                                                                </div>
+
+                                                            </div>
+
+
+                                                            {/* RELEVÂNCIA */}
+
+                                                            {item.score !== undefined &&
+                                                                item.score !== null && (
+
+                                                                    <div
+                                                                        title="Grau de relevância do trabalho em relação à pesquisa"
+                                                                        className="
+                                                    shrink-0
+                                                    text-xs
+                                                    font-medium
+                                                    text-zinc-500
+                                                    whitespace-nowrap
+                                                "
+                                                                    >
+
+                                                                        Relevância:{" "}
+
+                                                                        <span className="text-[#141B59]">
+                                                                            {(item.score * 100).toFixed(0)}%
+                                                                        </span>
+
+                                                                    </div>
+
+                                                                )}
+
+                                                        </div>
+
+
+                                                        {/* METADADOS */}
+
+                                                        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+
+                                                            <span className="text-zinc-500">
+                                                                {item.departamento?.nome || "Departamento"}
+                                                            </span>
+
+                                                            <span className="text-zinc-300">
+                                                                •
+                                                            </span>
+
+                                                            <span className="text-zinc-500">
+                                                                {item.tipoTrabalho?.nome || "Tipo de trabalho"}
+                                                            </span>
+
+
+                                                            {item?.especialidades?.[0]?.nome && (
+                                                                <>
+                                                                    <span className="text-zinc-300">
+                                                                        •
+                                                                    </span>
+
+                                                                    <span className="text-[#B7791F]">
+                                                                        {item.especialidades[0].nome}
+                                                                    </span>
+                                                                </>
+                                                            )}
+
+
+                                                            <span className="text-zinc-300">
+                                                                •
+                                                            </span>
+
+
+                                                            <span
+                                                                className={`
+                                            font-medium
+                                            ${item?.status === "APROVADO"
+                                                                        ? "text-green-600"
+                                                                        : item?.status === "RECUSADO"
+                                                                            ? "text-red-600"
+                                                                            : "text-yellow-600"
+                                                                    }
+                                        `}
+                                                            >
+                                                                {capitalize(item?.status || "N/A")}
+                                                            </span>
+
+                                                        </div>
+
+
+                                                        {/* RESUMO */}
+
+                                                        <p
+                                                            className="
+                                        mt-3
+                                        max-w-5xl
+                                        text-sm
+                                        leading-6
+                                        text-zinc-600
+                                        line-clamp-3
+                                    "
+                                                        >
+                                                            {item.resumo || "Resumo não disponível."}
+                                                        </p>
+
+
+                                                        {/* AÇÕES */}
+
+                                                        <div className="mt-4 flex items-center gap-4">
+                                                            {/* DETALHES */}
+
+                                                            <button
+                                                                onClick={() => setItemSelected(item)}
+                                                                className="
+                                                                    inline-flex
+                                                                    items-center
+                                                                    gap-1.5
+                                                                    text-sm
+                                                                    font-medium
+                                                                    text-[#141B59]
+                                                                    hover:text-[#1B4F9C]
+                                                                    hover:underline
+                                                                "
+                                                            >
+
+                                                                <svg
+                                                                    width="16"
+                                                                    height="16"
+                                                                    viewBox="0 0 24 24"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                >
+                                                                    <path d="M15 3h6v6" />
+                                                                    <path d="M10 14 21 3" />
+                                                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                                                </svg>
+
+                                                                Detalhes
+
+                                                            </button>
+
+                                                            {/* DOWNLOAD */}
+
+                                                            <button
+                                                                onClick={() => downloadFunction(item)}
+                                                                className="
+                                                                    inline-flex
+                                                                    items-center
+                                                                    gap-1.5
+                                                                    text-sm
+                                                                    font-medium
+                                                                    text-[#FC9500]
+                                                                    hover:text-[#E88900]
+                                                                    hover:underline
+                                                                "
+                                                            >
+
+                                                                <svg
+                                                                    width="16"
+                                                                    height="16"
+                                                                    viewBox="0 0 24 24"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                >
+                                                                    <path d="M12 3v12" />
+                                                                    <path d="m7 10 5 5 5-5" />
+                                                                    <path d="M5 21h14" />
+                                                                </svg>
+
+                                                                Download
+
+                                                            </button>
+
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+
+                                            </article>
+
+                                        ))}
+
+                                    </div>
+
+                                </div>
+
+                            ) : (
+
+                                /* SEM RESULTADOS */
+
+                                <div className="flex flex-col items-center justify-center py-20 text-center">
+
+                                    <div
+                                        className="
+                    mb-4
+                    flex
+                    h-14
+                    w-14
+                    items-center
+                    justify-center
+                    rounded-full
+                    bg-zinc-100
+                    text-zinc-400
+                "
+                                    >
+
+                                        <svg
+                                            width="24"
+                                            height="24"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="1.8"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <circle cx="11" cy="11" r="7" />
+                                            <path d="m20 20-4-4" />
+                                        </svg>
+
+                                    </div>
+
+
+                                    <h3 className="text-base font-semibold text-[#141B59]">
+                                        Nenhum resultado encontrado
+                                    </h3>
+
+
+                                    <p className="mt-1 max-w-md text-sm leading-6 text-zinc-500">
+                                        Tente ajustar os filtros ou utilizar palavras-chave
+                                        diferentes na pesquisa semântica.
+                                    </p>
+
+                                </div>
+
+                            )}
+
+                        {/* TRABALHOS RECOMENDADOS */}
+
+                        {data?.trabalhosRecomendados?.length > 0 && (
+                            <section className="mt-14">
+
+                                {/* CABEÇALHO */}
+
+                                <div className="mb-6">
+
+                                    <div className="flex items-center gap-2">
+
+                                        <h2 className="text-lg font-semibold text-[#141B59]">
+                                            Trabalhos relacionados
+                                        </h2>
+
+                                        <span className="
+                    inline-flex
+                    items-center
+                    rounded-full
+                    bg-[#FC9500]/10
+                    px-2.5
+                    py-1
+                    text-[11px]
+                    font-medium
+                    text-[#B7791F]
+                ">
+                                            Recomendações
+                                        </span>
+
+                                    </div>
+
+                                    <p className="mt-1 text-sm text-zinc-500">
+                                        Outros trabalhos académicos semanticamente relacionados
+                                        com os resultados desta pesquisa.
+                                    </p>
+
+                                </div>
+
+
+                                {/* LISTA */}
+                                <div className="border-t border-zinc-200">
+
+                                    {data?.trabalhosRecomendados?.length > 0 && (data?.trabalhosRecomendados.map(
+                                        (item: any, index: number) => (
+
+                                            <article
+                                                key={item.id}
+                                                className="
+                            group
+                            relative
+                            py-6
+                            border-b
+                            border-zinc-200
+                            transition-colors
+                            hover:bg-zinc-50/70
+                        "
+                                            >
+
+                                                <div className="flex gap-4">
+
+                                                    {/* POSIÇÃO */}
+
+                                                    <div
+                                                        className="
+                                    hidden
+                                    sm:flex
+                                    shrink-0
+                                    w-8
+                                    pt-1
+                                    justify-center
+                                "
+                                                    >
+                                                        <span className="text-xs font-medium text-zinc-400">
+                                                            {String(index + 1).padStart(2, "0")}
+                                                        </span>
+                                                    </div>
+
+
+                                                    {/* CONTEÚDO */}
+
+                                                    <div className="min-w-0 flex-1">
+
+                                                        {/* TÍTULO + RELEVÂNCIA */}
+
+                                                        <div className="
+                                    flex
+                                    items-start
+                                    justify-between
+                                    gap-4
+                                ">
+
+                                                            <div className="min-w-0">
+
+                                                                <h3
+                                                                    title={item?.titulo}
+                                                                    className="
+                                                text-[17px]
+                                                font-semibold
+                                                leading-6
+                                                text-[#1B4F9C]
+                                                hover:text-[#141B59]
+                                                hover:underline
+                                                cursor-pointer
+                                            "
+                                                                >
+                                                                    {item.titulo}
+                                                                </h3>
+
+
+                                                                {/* AUTOR / ANO */}
+
+                                                                <div className="
+                                            mt-1
+                                            flex
+                                            flex-wrap
+                                            items-center
+                                            gap-x-2
+                                            text-sm
+                                        ">
+
+                                                                    <span className="text-zinc-600">
+                                                                        {item.autor?.nome ||
+                                                                            "Autor não informado"}
+                                                                    </span>
+
+                                                                    <span className="text-zinc-400">
+                                                                        ·
+                                                                    </span>
+
+                                                                    <span className="text-zinc-500">
+                                                                        {item.createdAt
+                                                                            ? new Date(
+                                                                                item.createdAt
+                                                                            ).getFullYear()
+                                                                            : "Ano não informado"}
+                                                                    </span>
+
+                                                                </div>
+
+                                                            </div>
+
+
+                                                            {/* RELEVÂNCIA */}
+
+                                                            {item.recommendationScore !== null && (
+                                                                <div
+                                                                    title="Grau de relação deste trabalho com os resultados da pesquisa"
+                                                                    className="
+                                                shrink-0
+                                                text-xs
+                                                font-medium
+                                                text-zinc-500
+                                                whitespace-nowrap
+                                            "
+                                                                >
+
+                                                                    Relação:{" "}
+
+                                                                    <span className="text-[#141B59]">
+                                                                        {(
+                                                                            item.recommendationScore *
+                                                                            100
+                                                                        ).toFixed(0)}
+                                                                        %
+                                                                    </span>
+
+                                                                </div>
+                                                            )}
+
+                                                        </div>
+
+
+                                                        {/* METADADOS */}
+
+                                                        <div className="
+                                    mt-3
+                                    flex
+                                    flex-wrap
+                                    items-center
+                                    gap-2
+                                    text-xs
+                                ">
+
+                                                            <span className="text-zinc-500">
+                                                                {item.departamento?.nome ||
+                                                                    "Departamento"}
+                                                            </span>
+
+                                                            <span className="text-zinc-300">
+                                                                •
+                                                            </span>
+
+                                                            <span className="text-zinc-500">
+                                                                {item.tipoTrabalho?.nome ||
+                                                                    "Tipo de trabalho"}
+                                                            </span>
+
+
+                                                            {item?.especialidades?.[0]?.nome && (
+                                                                <>
+                                                                    <span className="text-zinc-300">
+                                                                        •
+                                                                    </span>
+
+                                                                    <span className="text-[#B7791F]">
+                                                                        {item.especialidades[0].nome}
+                                                                    </span>
+                                                                </>
+                                                            )}
+
+                                                        </div>
+
+
+                                                        {/* RESUMO */}
+
+                                                        <p
+                                                            className="
+                                        mt-3
+                                        max-w-5xl
+                                        text-sm
+                                        leading-6
+                                        text-zinc-600
+                                        line-clamp-3
+                                    "
+                                                        >
+                                                            {item.resumo ||
+                                                                "Resumo não disponível."}
+                                                        </p>
+
+
+                                                        {/* AÇÕES */}
+
+                                                        <div className="
+                                    mt-4
+                                    flex
+                                    items-center
+                                    gap-4
+                                ">
+
+                                                            {/* VISUALIZAR */}
+
+                                                            <Dialog
+                                                                open={previewOpen}
+                                                                onOpenChange={setPreviewOpen}
+                                                            >
+
+                                                                <DialogTrigger asChild>
+
+                                                                    <button
+                                                                        onClick={() =>
+                                                                            handlePreview(
+                                                                                item.fileUrl
+                                                                            )
+                                                                        }
+                                                                        className="
+                                                    inline-flex
+                                                    items-center
+                                                    gap-1.5
+                                                    text-sm
+                                                    font-medium
+                                                    text-[#141B59]
+                                                    hover:text-[#1C2675]
+                                                    hover:underline
+                                                "
+                                                                    >
+
+                                                                        <svg
+                                                                            width="16"
+                                                                            height="16"
+                                                                            viewBox="0 0 24 24"
+                                                                            fill="none"
+                                                                            stroke="currentColor"
+                                                                            strokeWidth="2"
+                                                                            strokeLinecap="round"
+                                                                            strokeLinejoin="round"
+                                                                        >
+                                                                            <path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0" />
+                                                                            <circle
+                                                                                cx="12"
+                                                                                cy="12"
+                                                                                r="3"
+                                                                            />
+                                                                        </svg>
+
+                                                                        Visualizar
+
+                                                                    </button>
+
+                                                                </DialogTrigger>
+
+
+                                                                <DialogContent
+                                                                    className="
+                                                max-w-6xl
+                                                p-0
+                                                overflow-hidden
+                                                border-none
+                                                bg-white
+                                                rounded-2xl
+                                                shadow-2xl
+                                            "
+                                                                >
+
+                                                                    <iframe
+                                                                        src={selectedFile || ""}
+                                                                        className="w-full h-[80vh]"
+                                                                        title="Visualização do trabalho"
+                                                                    />
+
+                                                                </DialogContent>
+
+                                                            </Dialog>
+
+
+                                                            {/* DOWNLOAD */}
+
+                                                            <button
+                                                                onClick={() =>
+                                                                    downloadFunction(item)
+                                                                }
+                                                                className="
+                                            inline-flex
+                                            items-center
+                                            gap-1.5
+                                            text-sm
+                                            font-medium
+                                            text-[#FC9500]
+                                            hover:text-[#E88900]
+                                            hover:underline
+                                        "
+                                                            >
+
+                                                                <svg
+                                                                    width="16"
+                                                                    height="16"
+                                                                    viewBox="0 0 24 24"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    strokeWidth="2"
+                                                                    strokeLinecap="round"
+                                                                    strokeLinejoin="round"
+                                                                >
+                                                                    <path d="M12 3v12" />
+                                                                    <path d="m7 10 5 5 5-5" />
+                                                                    <path d="M5 21h14" />
+                                                                </svg>
+
+                                                                Download
+
+                                                            </button>
+
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+
+                                            </article>
+
+                                        )
+                                    ))}
+
+                                </div>
+
+
+                            </section>
+                        )}
+                    </div>
+
+
+                    {/* CTA */}
+                    <section className="pb-20 px-6 lg:px-10 mt-10">
+                        <div className="
+        max-w-7xl
+        mx-auto
+        border
+        border-zinc-200
+        bg-[#F8FAFF]
+        rounded
+        overflow-hidden
+        relative
+    ">
+
+                            <div className="
+            px-8
+            py-10
+            lg:px-14
+            lg:py-12
+            flex
+            flex-col
+            md:flex-row
+            md:items-center
+            md:justify-between
+            gap-8
+        ">
+
+                                {/* TEXTO */}
+                                <div className="max-w-2xl">
+
+                                    <div className="
+                    flex
+                    items-center
+                    gap-2
+                    text-xs
+                    uppercase
+                    tracking-[0.18em]
+                    text-[#141B59]
+                    font-semibold
+                    mb-3
+                ">
+                                        <span className="w-6 h-px bg-[#FC9500]" />
+                                        Encontre mais
+                                    </div>
+
+                                    <h2 className="
+                    text-2xl
+                    md:text-3xl
+                    font-bold
+                    leading-tight
+                    text-[#0B1437]
+                ">
+                                        Explore o conhecimento produzido no ISPB
+                                    </h2>
+
+                                    <p className="
+                    mt-3
+                    text-zinc-600
+                    text-sm
+                    md:text-base
+                    leading-7
+                    max-w-xl
+                ">
+                                        Consulte trabalhos académicos, descubra pesquisas
+                                        relacionadas e encontre novos conteúdos através
+                                        da pesquisa semântica.
+                                    </p>
+
+                                </div>
+
+
+                                {/* AÇÃO */}
+                                <div className="shrink-0">
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            window.scrollTo({
+                                                top: 0,
+                                                behavior: "smooth",
+                                            });
+                                        }}
+                                        className="
+                        inline-flex
+                        items-center
+                        justify-center
+                        gap-2
+                        h-11
+                        px-6
+                        rounded-md
+                        bg-[#141B59]
+                        hover:bg-[#0B1437]
+                        text-white
+                        text-sm
+                        font-semibold
+                        transition-colors
+                        cursor-pointer
+                    "
+                                    >
+                                        Explorar trabalhos
+
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="17"
+                                            height="17"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        >
+                                            <path d="M5 12h14" />
+                                            <path d="m12 5 7 7-7 7" />
+                                        </svg>
+                                    </button>
+
+                                </div>
+
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </>
+    )
+}

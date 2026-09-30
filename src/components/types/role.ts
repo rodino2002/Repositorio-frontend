@@ -1,0 +1,1 @@
+export type Role = "Estudante"| "Avaliador" | "Admin" | "Professor" 
