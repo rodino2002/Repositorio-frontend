@@ -1,19 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../config/api";
 import { useQuery } from "@tanstack/react-query";
-import { StepForward } from "lucide-react";
 import { toast, Toaster } from "sonner";
 
-interface Departamento {
-    id: number;
-    nome: string;
-}
-
-interface Especialidade {
-    id: number;
-    nome: string;
-}
 
 interface FormData {
     nome: string;

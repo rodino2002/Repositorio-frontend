@@ -1,4 +1,3 @@
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 interface TrabalhoCardProps {
   item: any;

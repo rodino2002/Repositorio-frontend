@@ -14,22 +14,10 @@ export default function Departamentos() {
     const [searchInput, setSearchInput] = useState("")
     const [currentPage, setCurrentPage] = useState(1)
     const perPage = 20
-
-    const [filterModalIsOpen, setFilterModalIsOpen] = useState(false)
-
-    const [filter, setFilter] = useState({
-        name: "",
-        email: "",
-        referencia: "",
-        tipoMovimento: "",
-        responsavel: "",
-        dataInicio: "",
-        dataFinal: ""
-    })
     const [editDepartamentModal, setEditDepartamentModal] = useState(false)
     const [detailsDepartamentModal, setDetailsDepartamentModal] = useState(false)
     const [itemSelected, setItemSelected] = useState() as any
-    const [isFiltered, setIsFiltered] = useState(false)
+    const [isFiltered, _setIsFiltered] = useState(false)
     const [createModalIsOpen, setCreateModalIsOpen] = useState(false)
     const [modalEliminar, setModalEliminar] = useState(false)
     const { user } = useContext(AuthContext)
@@ -49,7 +37,7 @@ export default function Departamentos() {
         }
     }
 
-    const { data, isLoading, refetch, isRefetching } = useQuery({
+    const { data, isLoading, isRefetching } = useQuery({
         queryKey: [
             "departamentoLista",
             currentPage,
@@ -63,19 +51,7 @@ export default function Departamentos() {
 
 
 
-    const clearFilter = () => {
-        setIsFiltered(false)
-        setFilter({
-            ...filter,
-            name: "",
-            email: "",
-            referencia: "",
-            tipoMovimento: "",
-            responsavel: "",
-            dataInicio: "",
-            dataFinal: ""
-        })
-    }
+    
 
     const totalPages = data?.total ?? 1;
 

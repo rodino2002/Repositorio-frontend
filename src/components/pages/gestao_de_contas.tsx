@@ -3,7 +3,6 @@ import { api } from "../config/api";
 import { useQuery } from "@tanstack/react-query";
 import { Spinner } from "../utils/spinner";
 import CreateUser from "../user/create";
-import type { Role } from "../types/role";
 import DetailsUser from "../user/details";
 import { Dialog, DialogContent, DialogTrigger } from "../ui/dialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";

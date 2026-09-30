@@ -1,13 +1,10 @@
-import React from 'react';
 import { 
   Globe, 
   ShieldCheck, 
   ArrowRight, 
   Cpu, 
   Award,
-  Instagram,
-  Facebook,
-  Linkedin
+  
 } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -177,11 +174,7 @@ const ISPBLandingPage = () => {
               <p className="text-zinc-500">Av. Governador Moutinho, T 125</p>
             </div>
             {/* Ícones sociais adicionados ao rodapé esquerdo */}
-            <div className="flex items-center gap-4 pt-2">
-              <a href="#" className="hover:text-white transition-colors"><Instagram className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-white transition-colors"><Facebook className="w-5 h-5" /></a>
-              <a href="#" className="hover:text-white transition-colors"><Linkedin className="w-5 h-5" /></a>
-            </div>
+            
           </div>
 
           {/* Coluna 2: Recursos */}
@@ -206,11 +199,7 @@ const ISPBLandingPage = () => {
         {/* Linha de Copyright inferior limpa */}
         <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-zinc-800 text-center text-xs text-zinc-600 flex flex-col md:flex-row justify-between items-center gap-4">
           <p>2026 © Instituto Superior Politécnico de Benguela.</p>
-          <div className="flex items-center gap-4">
-            <a href="#" className="hover:text-zinc-400"><Instagram className="w-4 h-4" /></a>
-            <a href="#" className="hover:text-zinc-400"><Facebook className="w-4 h-4" /></a>
-            <a href="#" className="hover:text-zinc-400"><Linkedin className="w-4 h-4" /></a>
-          </div>
+          
         </div>
       </footer>
     </div>

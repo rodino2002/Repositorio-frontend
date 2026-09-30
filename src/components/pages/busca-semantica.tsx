@@ -125,7 +125,7 @@ export default function SemanticTCCSearchLanding() {
         }
     }
 
-    const { data, isLoading, isRefetching } = useQuery({
+    const { data } = useQuery({
         queryKey: [
             "trabalhosSemanticaList",
             filters,

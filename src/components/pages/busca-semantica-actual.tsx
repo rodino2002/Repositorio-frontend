@@ -6,7 +6,6 @@ import { useContext, useEffect, useState } from "react";
 import {
     Dialog,
     DialogContent,
-    DialogOverlay,
     DialogTrigger,
 } from "@/components/ui/dialog"
 import { useDepartaments } from "../hooks/useDepartaments";
@@ -21,7 +20,6 @@ import { AuthContext } from "@/Context/auth.context";
 import { isAxiosError } from "axios";
 import { toast, Toaster } from "sonner";
 import { Spinner } from "../utils/spinner";
-import { useDetails } from "../hooks/useDetails";
 
 // 1. Captura o ano atual dinamicamente (ex: 2026)
 const anoAtual = new Date().getFullYear();
@@ -239,7 +237,6 @@ export default function BuscaSemanticaActual() {
 
     const userData = localStorage.getItem("user-repo");
     const details = userData ? JSON.parse(userData) : null
-    const [logoutIsloading, setLogoutIsLoading] = useState(false);
     const { logout } = useContext(AuthContext)
 
     const handleLogin = async (e: any) => {
@@ -285,21 +282,21 @@ export default function BuscaSemanticaActual() {
         }
     }
 
-    const handleLogout = async (e: any) => {
-        e.preventDefault()
+    // const handleLogout = async (e: any) => {
+    //     e.preventDefault()
 
-        setLogoutIsLoading(true)
-        try {
+    //     setLogoutIsLoading(true)
+    //     try {
 
-            logout()
-            //toast.success("Sessão terminada com sucesso!")
+    //         logout()
+    //         //toast.success("Sessão terminada com sucesso!")
 
-        } catch (error) {
-            console.log(error)
-        } finally {
-            setLogoutIsLoading(false)
-        }
-    }
+    //     } catch (error) {
+    //         console.log(error)
+    //     } finally {
+    //         setLogoutIsLoading(false)
+    //     }
+    // }
 
 
     return (
