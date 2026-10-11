@@ -368,7 +368,7 @@ return (
                 "
             >
                 <img
-                    src={trocaImg ? "/img1.jpg" : "/img2.jpg"}
+                    src={trocaImg ? "/img1.webp" : "/img2.webp"}
                     alt="Imagem de apresentação"
                     className="
                         w-full
