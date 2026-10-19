@@ -1,13 +1,13 @@
 import { useState, useRef, useEffect } from "react";
-import img1 from "@/assets/carrossel/img1.jpeg"
-import img2 from "@/assets/carrossel/img2.jpeg"
-import img3 from "@/assets/carrossel/img3.jpeg"
-import img4 from "@/assets/carrossel/img4.jpeg"
-import img5 from "@/assets/carrossel/img5.jpeg"
-import img6 from "@/assets/carrossel/img6.jpeg"
-import img7 from "@/assets/carrossel/img7.jpeg"
-import img8 from "@/assets/carrossel/img8.jpeg"
-import img9 from "@/assets/carrossel/img9.jpeg"
+import img1 from "@/assets/carrossel/img1.webp"
+import img2 from "@/assets/carrossel/img2.webp"
+import img3 from "@/assets/carrossel/img3.webp"
+import img4 from "@/assets/carrossel/img4.webp"
+import img5 from "@/assets/carrossel/img5.webp"
+import img6 from "@/assets/carrossel/img6.webp"
+import img7 from "@/assets/carrossel/img7.webp"
+import img8 from "@/assets/carrossel/img8.webp"
+import img9 from "@/assets/carrossel/img9.webp"
 
 const carouselImages = [
         {
