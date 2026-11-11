@@ -26,6 +26,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
     const [formData, setFormData] = useState({
         titulo: "",
         resumo: "",
+        autor: "",
         fileUrl: "",
         departamentoId: "",
         especialidadesIds: "",
@@ -49,6 +50,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
             ...formData,
             titulo: "",
             resumo: "",
+            autor: "",
             fileUrl: "",
             departamentoId: "",
             especialidadesIds: "",
@@ -100,6 +102,7 @@ export default function CreateWorks({ onClose, isOpen }: props) {
             const body = {
                 titulo: formData?.titulo,
                 resumo: formData?.resumo,
+                autor: formData?.autor,
                 fileUrl: urlFile ?? "",
                 departamentoId: Number(formData.departamentoId),
                 especialidadesIds: arrayEspecialidades,
@@ -194,6 +197,11 @@ export default function CreateWorks({ onClose, isOpen }: props) {
                         <div className="flex flex-col space-y-2 mt-6">
                             <label className="text-[#143163] text-[14px] font-semibold">Título do trabalho<strong className="text-[#ED5656]">*</strong></label>
                             <input type="text" required value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                                className={`h-9 p-2 ring-1 rounded-[6px] ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm`} />
+                        </div>
+                          <div className="flex flex-col space-y-2 mt-6">
+                            <label className="text-[#143163] text-[14px] font-semibold">Autor<strong className="text-[#ED5656]">*</strong></label>
+                            <input type="text" required value={formData.autor} onChange={(e) => setFormData({ ...formData, autor: e.target.value })}
                                 className={`h-9 p-2 ring-1 rounded-[6px] ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm`} />
                         </div>
                         <div className="flex flex-col space-y-2 mt-6 w-full">

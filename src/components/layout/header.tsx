@@ -5,13 +5,14 @@ import { Dialog, DialogClose, DialogContent, DialogTrigger } from "../ui/dialog"
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { SidebarTrigger } from "../ui/sidebar";
 import { useDetails } from "../hooks/useDetails";
-
+import { useNavigate } from "react-router-dom";
+import { Search } from "lucide-react";
 export default function Header() {
 
     const [logoutIsloading, setLogoutIsLoading] = useState(false);
     const { logout } = useContext(AuthContext)
-
-    const {data: details} = useDetails();
+    const navigate = useNavigate();
+    const { data: details } = useDetails();
 
 
     const handleLogout = async (e: any) => {
@@ -121,6 +122,46 @@ export default function Header() {
                         </p>
                     </div>
                 </div>
+                {/* ============================
+    BUSCA SEMÂNTICA
+============================ */}
+<div className="shrink-0">
+    <Tooltip>
+        <TooltipTrigger asChild>
+            <button
+                type="button"
+                onClick={() => navigate("/busca-semantica-tcc")}
+                className="
+                    h-10
+                    px-3
+                    sm:px-4
+                    flex
+                    items-center
+                    justify-center
+                    gap-2
+                    rounded-lg
+                    bg-[#EEF0F4]
+                    text-[#143163]
+                    hover:bg-[#143163]
+                    hover:text-white
+                    transition-colors
+                    duration-300
+                    cursor-pointer
+                "
+            >
+                <Search size={19} />
+
+                <span className="hidden sm:inline text-sm font-semibold">
+                    Busca semântica
+                </span>
+            </button>
+        </TooltipTrigger>
+
+        <TooltipContent>
+            <p>Pesquisar trabalhos académicos</p>
+        </TooltipContent>
+    </Tooltip>
+</div>
 
                 {/* ============================
                 LOGOUT

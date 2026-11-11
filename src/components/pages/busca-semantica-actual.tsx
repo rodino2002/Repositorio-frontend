@@ -15,11 +15,13 @@ import Carrossel from "../busca-semantica/carrosssel";
 import { useTipoTrabalhos } from "../hooks/useTipoTrabalho";
 import { ResultsSkeleton } from "../utils/trabalhosSkeletom";
 import DetalhesTrabalho from "../detlhesTrabalho/detalhes";
-import { LogOut, UserRound } from "lucide-react";
+import { Library, LogOut, UserRound } from "lucide-react";
 import { AuthContext } from "@/Context/auth.context";
 import { isAxiosError } from "axios";
 import { toast, Toaster } from "sonner";
 import { Spinner } from "../utils/spinner";
+import { useNavigate } from "react-router";
+import { Button } from "../ui/button";
 
 // 1. Captura o ano atual dinamicamente (ex: 2026)
 const anoAtual = new Date().getFullYear();
@@ -238,6 +240,7 @@ export default function BuscaSemanticaActual() {
     const userData = localStorage.getItem("user-repo");
     const details = userData ? JSON.parse(userData) : null
     const { logout } = useContext(AuthContext)
+    const navigate = useNavigate()
 
     const handleLogin = async (e: any) => {
 
@@ -251,6 +254,8 @@ export default function BuscaSemanticaActual() {
             setLoading(true)
 
             await login(body)
+
+            navigate("/")
 
             setShowInputs(false)
 
@@ -303,151 +308,74 @@ export default function BuscaSemanticaActual() {
         <>
             <Toaster />
             {/* HERO CAROUSEL */}
-
             <div className="relative">
 
+                {/* CABEÇALHO */}
+                <div className="absolute left-4 right-4 top-4 z-50 flex items-center justify-end space-x-4 ">
 
-                
-{details?.usuario?.nome ? (
-    // UTILIZADOR LOGADO
-    <div
-        className="
-            absolute
-            right-4
-            top-4
-            z-50
-            flex
-            items-center
-            gap-2
-            rounded-full
-            border border-white/60
-            bg-black/20
-            px-2
-            py-1.5
-            shadow-lg
-            backdrop-blur-md
-        "
-    >
-        {/* FOTO / INICIAL */}
-        {details?.usuario?.photo ? (
-            <img
-                src={details.usuario.photo}
-                alt={details.usuario.nome}
-                className="h-8 w-8 rounded-full object-cover"
-            />
-        ) : (
-            <div
-                className="
-                    flex
-                    h-8
-                    w-8
-                    items-center
-                    justify-center
-                    rounded-full
-                    bg-white/20
-                    text-xs
-                    font-bold
-                    text-white
-                "
-            >
-                {details.usuario.nome.charAt(0).toUpperCase()}
-            </div>
-        )}
+                    {/* IR AO REPOSITÓRIO */}
+                    <Button
+                        onClick={() => navigate('/')}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2 rounded-full  border border-white/20 bg-black/40
+                          text-sm font-medium text-white hover:text-white cursor-pointer
+                         shadow-lg backdrop-blur-md transition-all hover:bg-white/15 active:scale-95"
+                    >
+                        <Library size={16} />
+                        <span>Ir ao Repositório</span>
+                    </Button>
 
-        {/* NOME */}
-        <span className="text-sm font-medium text-white">
-            {details.usuario.nome}
-        </span>
+                    {details?.usuario?.nome ? (
 
-        {/* LOGOUT */}
-        <button
-            type="button"
-            onClick={logout}
-            title="Terminar sessão"
-            className="
-                flex
-                h-8
-                w-8
-                shrink-0
-                items-center
-                justify-center
-                rounded-full
-                text-white/60
-                transition-all
-                hover:bg-red-500/20
-                hover:text-red-400
-                active:scale-95
-            "
-        >
-            <LogOut size={17} strokeWidth={2} />
-        </button>
-    </div>
-) : (
-    // NÃO AUTENTICADO
-   
-<button
-  type="button"
-  onClick={() => setShowInputs(true)}
-  className="
-    absolute right-4 top-4 z-50
-    flex items-center gap-2
-    rounded-full
-    border border-white/20
-    bg-black/40
-    px-3 py-1.5
-    text-sm font-medium text-white
-    shadow-lg
-    backdrop-blur-md
-    transition-all duration-300
+                        /* UTILIZADOR LOGADO */
+                        <div className="flex items-center gap-2 rounded-full border border-white/60 bg-black/20 px-2 py-1.5 shadow-lg backdrop-blur-md">
 
-    hover:border-white/30
-    hover:bg-white/15
-    hover:shadow-xl
-    hover:-translate-y-0.5
+                            {details?.usuario?.photo ? (
+                                <img
+                                    src={details.usuario.photo}
+                                    alt={details.usuario.nome}
+                                    className="h-8 w-8 rounded-full object-cover"
+                                />
+                            ) : (
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-xs font-bold text-white">
+                                    {details.usuario.nome.charAt(0).toUpperCase()}
+                                </div>
+                            )}
 
-    active:scale-95
-  "
->
-  <UserRound
-    size={17}
-    strokeWidth={2}
-    className="transition-transform duration-300 group-hover:scale-110"
-  />
+                            <span className="text-sm font-medium text-white">
+                                {details.usuario.nome}
+                            </span>
 
-  <span>Entrar</span>
-</button>
+                            <button
+                                type="button"
+                                onClick={logout}
+                                title="Terminar sessão"
+                                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/60 transition-all hover:bg-red-500/20 hover:text-red-400 active:scale-95"
+                            >
+                                <LogOut size={17} />
+                            </button>
+                        </div>
 
+                    ) : (
 
-)}
-
-
-
-
-
-
-
+                        /* NÃO AUTENTICADO */
+                        <button
+                            type="button"
+                            onClick={() => setShowInputs(!showInputs)}
+                            className="flex items-center gap-2 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-sm font-medium text-white shadow-lg backdrop-blur-md transition-all hover:bg-white/15 active:scale-95"
+                        >
+                            <UserRound size={17} />
+                            <span>Entrar</span>
+                        </button>
+                    )}
+                </div>
 
                 {/* CARD DE LOGIN */}
                 {showInputs && (
-                    <div
-                        className={`
-            absolute right-4 top-16 z-50
-            w-[calc(100vw-2rem)]
-            max-w-[360px]
-            rounded-2xl
-            border
-            ${statusError
-                                ? "border-red-500/80 ring-1 ring-red-500/20"
-                                : "border-white/20"
-                            }
-            bg-black/40
-            p-5
-            shadow-2xl
-            backdrop-blur-xl
-            animate-in fade-in slide-in-from-top-2
-            duration-200
-        `}
-                    >
+                    <div className="absolute right-4 top-16 z-50 w-[calc(100vw-2rem)] max-w-[360px] rounded-2xl border border-white/20 bg-black/40 p-5 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2 duration-200">
+
+
                         {/* CABEÇALHO */}
                         <div className="mb-5">
                             <h2 className="text-lg font-bold text-white">
@@ -608,12 +536,13 @@ export default function BuscaSemanticaActual() {
                             </p>
                         </div>
                     </div>
+
+
                 )}
-
-
 
                 <Carrossel />
             </div>
+
 
 
             <div className="relative -mt-20 z-20">

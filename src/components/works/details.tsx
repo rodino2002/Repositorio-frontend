@@ -149,15 +149,24 @@ return (
                                 {itemSelected?.titulo || "N/A"}
                             </p>
                         </div>
-
-                        {/* Autor */}
-                        <div className="space-y-1 min-w-0">
+                        <div className="sm:col-span-2 space-y-1">
                             <p className="text-xs text-zinc-500 font-medium">
                                 Autor
                             </p>
 
+                            <p className="text-sm sm:text-base font-semibold text-[#0B1437] break-words">
+                                {itemSelected?.autor || "N/A"}
+                            </p>
+                        </div>
+
+                        {/* Autor */}
+                        <div className="space-y-1 min-w-0">
+                            <p className="text-xs text-zinc-500 font-medium">
+                                Responsavel pelo trabalho
+                            </p>
+
                             <p className="text-sm font-semibold text-[#0B1437] break-words">
-                                {itemSelected?.autor?.nome || "N/A"}
+                                {itemSelected?.responsavel?.nome || "N/A"}
                             </p>
                         </div>
 
