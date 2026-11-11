@@ -352,7 +352,7 @@ export default function Trabalhos() {
                                                     <p className="font-semibold text-[#143163] truncate" title={item?.titulo}>{item?.titulo ?? "N/A"}</p>
                                                     {item?.resumo && <p className="text-xs text-[#8A94A8] mt-1 line-clamp-1">{item.resumo}</p>}
                                                 </td>
-                                                <td className="px-4 py-4 text-[#465A9D]">{item?.autor?.nome ?? "N/A"}</td>
+                                                <td className="px-4 py-4 text-[#465A9D]">{item?.autor ?? "N/A"}</td>
                                                 <td className="px-4 py-4">{renderStatus(item?.status)}</td>
                                                 <td className="px-4 py-4">{renderSpecialties(item)}</td>
                                                 <td className="px-4 py-4 text-[#465A9D] whitespace-nowrap">{item?.createdAt ? new Date(item.createdAt).toLocaleDateString("pt-BR") : "N/A"}</td>

@@ -31,7 +31,8 @@ export default function UpdateWork({ onClose, isOpen, itemSelected }: props) {
         fileUrl: "",
         departamentoId: "",
         especialidadesIds: "",
-        tipo: ""
+        tipo: "",
+        autor: "",
     })
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function UpdateWork({ onClose, isOpen, itemSelected }: props) {
             resumo: itemSelected.resumo ?? "",
             fileUrl: itemSelected.fileUrl ?? "",
             tipo: String(itemSelected?.tipoTrabalho?.id) ?? "",
+            autor: itemSelected.autor ?? "",
             departamentoId: itemSelected.departamento?.id
                 ? String(itemSelected.departamento.id)
                 : "",
@@ -52,8 +54,6 @@ export default function UpdateWork({ onClose, isOpen, itemSelected }: props) {
         })
     }
 }, [itemSelected])
-
-console.log(formData)
 
 
     const [formDataFiles, setFormDataFiles] = useState({
@@ -110,6 +110,7 @@ console.log(formData)
                 titulo: formData.titulo,
                 resumo: formData.resumo,
                 fileUrl: urlFile,
+                autor: formData.autor,
                 departamentoId: Number(formData.departamentoId),
                 especialidadesIds: arrayEspecialidades,
                 tipoTrabalhoId: Number(formData?.tipo)
@@ -197,6 +198,12 @@ console.log(formData)
                         <div className="flex flex-col space-y-2 mt-6">
                             <label className="text-[#143163] text-[14px] font-semibold">Título do trabalho<strong className="text-[#ED5656]">*</strong></label>
                             <input type="text" value={formData.titulo} onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+                                className={`h-9 p-2 ring-1 rounded-[6px] ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm`} />
+                        </div>
+                       
+                        <div className="flex flex-col space-y-2 mt-6">
+                            <label className="text-[#143163] text-[14px] font-semibold">Autor<strong className="text-[#ED5656]">*</strong></label>
+                            <input type="text" value={formData.autor} onChange={(e) => setFormData({ ...formData, autor: e.target.value })}
                                 className={`h-9 p-2 ring-1 rounded-[6px] ring-[#D4D9EA] focus:ring-1 focus:ring-[#FFC505] focus:outline-none text-[#143163] text-sm`} />
                         </div>
                         <div className="flex flex-col space-y-2 mt-6 w-full">
